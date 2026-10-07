@@ -6,9 +6,9 @@ Vertical slices, each sized for a single focused session. After every phase the 
 
 ### Phase 1 – Scaffold
 Goal: empty app builds and tests run.
-- [ ] Vite + React + TS project created
-- [ ] ESLint, Prettier, Vitest configured
-- [ ] `npm run dev`, `build`, `test` all pass
+- [x] Vite + React + TS project created
+- [x] ESLint, Prettier, Vitest configured
+- [x] `npm run dev`, `build`, `test` all pass
 
 ### Phase 2 – Data model and fixtures
 Goal: shared types and sample data.
