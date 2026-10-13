@@ -17,10 +17,10 @@ Goal: shared types and sample data.
 
 ### Phase 3 – GPX parser
 Goal: GPX text -> Track.
-- [ ] Parses `trkpt`, `ele`, `time`, HR/cadence extensions
-- [ ] Handles multiple segments and missing fields
-- [ ] Invalid XML/GPX returns a clear error
-- [ ] Unit tests on fixtures
+- [x] Parses `trkpt`, `ele`, `time`, HR/cadence extensions
+- [x] Handles multiple segments and missing fields
+- [x] Invalid XML/GPX returns a clear error
+- [x] Unit tests on fixtures
 
 ### Phase 4 – Upload UI
 Goal: user can load a file.
