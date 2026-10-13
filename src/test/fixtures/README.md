@@ -1,0 +1,9 @@
+# GPX fixtures
+
+Trimmed, anonymised windows of real Garmin Connect exports. `<metadata>` is removed, track names are replaced, and each window is cut from the middle of the activity, away from its start and end. Raw recordings live in the gitignored `GpxFiles/` folder and are never committed.
+
+| File              | Source                | Points | Segments | Fields                                                                         |
+| ----------------- | --------------------- | -----: | -------: | ------------------------------------------------------------------------------ |
+| `run.gpx`         | Garmin run export     |    150 |        1 | `ele`, `time`, HR, cadence, air temp (`ns3:TrackPointExtension`)               |
+| `bike.gpx`        | Garmin cycling export |    200 |        2 | `ele`, `time`, HR, air temp; segments split at a real 177 s pause (700 m jump) |
+| `no-ele-time.gpx` | Garmin cycling export |     80 |        1 | `lat`/`lon` only                                                               |

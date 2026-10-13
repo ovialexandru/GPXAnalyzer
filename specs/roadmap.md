@@ -12,8 +12,8 @@ Goal: empty app builds and tests run.
 
 ### Phase 2 – Data model and fixtures
 Goal: shared types and sample data.
-- [ ] `Track` / `TrackPoint` types (lat, lon, ele?, time?, hr?, cad?)
-- [ ] 2–3 small GPX fixtures (run, bike, one with no elevation/time)
+- [x] `Track` / `TrackPoint` types (lat, lon, ele?, time?, hr?, cad?)
+- [x] 2–3 small GPX fixtures (run, bike, one with no elevation/time)
 
 ### Phase 3 – GPX parser
 Goal: GPX text -> Track.

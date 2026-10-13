@@ -1,0 +1,40 @@
+
+Feature specification:
+Find the next phase on specs/roadmap.md and make a branch, ask me about the feature spec.
+Create:
+	- 'plan.md' as a series of numbered task groups.
+	- 'requrement.md' for scpe, decisions, context
+	- 'validation.md' for how to know if implementation succeded and can be merged
+	Refer to spcs/mision.md and specs/techstack.md for guidance.
+	Important: you MUST use your AsUserQuestion tool, grouped on these 3, before writing to disc.
+
+
+**Tip: do not modify directly spec, ask agent to do it!
+
+
+Feature implementation:
+    /clear
+    Implement the remaining task groups.
+
+Committing:
+    Mark this phase as complete in specs/roadmap.md, commit this work, switch to main and merge this branch then delete it.
+
+replaining..
+    update techstack.md to capture that we want to use Vitest tests for validation and write a script in package.json .
+    update existing specs and code to reflect these testing changes.
+    write a new test suite using the specified testing framework.
+
+    changes..
+    the product's web UI should folllow responsive design.update the product specs and all feature specs to reflect this, as well as any code.
+
+    skills..
+    I want to keep a ChangeLog.md in project root, with headings for dates. if no chengelog, examine git commits and add bullets for each date. Then as we work, we will amnually invoke this skill before merging. Help me write a skill for this
+
+
+review...
+    do a deep review: spawn multiple subagents to go through all changes of this branch from 3 different perspectives and see if anything does not make sense, coud be better, etc.
+
+    commit the changes.
+    use changelo skill to update the changelog with work done on this branch.
+    commit this work, switch to main and merge this branch then delete it.
+

@@ -22,8 +22,8 @@ export default defineConfig([
     },
   },
   {
-    // parser and metrics are pure layers: no UI dependencies
-    files: ['src/parser/**/*.ts', 'src/metrics/**/*.ts'],
+    // model, parser and metrics are pure layers: no UI dependencies
+    files: ['src/model/**/*.ts', 'src/parser/**/*.ts', 'src/metrics/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -31,7 +31,7 @@ export default defineConfig([
           patterns: [
             {
               group: ['**/ui', '**/ui/**', 'react', 'react-dom'],
-              message: 'parser/metrics must not depend on UI.',
+              message: 'model/parser/metrics must not depend on UI.',
             },
           ],
         },
