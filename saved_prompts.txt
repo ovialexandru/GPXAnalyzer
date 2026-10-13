@@ -5,8 +5,8 @@ Create:
 	- 'plan.md' as a series of numbered task groups.
 	- 'requrement.md' for scpe, decisions, context
 	- 'validation.md' for how to know if implementation succeded and can be merged
-	Refer to spcs/mision.md and specs/techstack.md for guidance.
-	Important: you MUST use your AsUserQuestion tool, grouped on these 3, before writing to disc.
+	Refer to specs/mision.md and specs/techstack.md for guidance.
+	Important: you MUST use your AskUserQuestion tool, grouped on these 3, before writing to disc.
 
 
 **Tip: do not modify directly spec, ask agent to do it!

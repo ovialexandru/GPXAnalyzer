@@ -24,9 +24,9 @@ Goal: GPX text -> Track.
 
 ### Phase 4 – Upload UI
 Goal: user can load a file.
-- [ ] Drag-and-drop and file picker
-- [ ] Shows file name and point count
-- [ ] Error message for bad files
+- [x] Drag-and-drop and file picker
+- [x] Shows file name and point count
+- [x] Error message for bad files
 
 ### Phase 5 – Map
 Goal: track visible on a map.

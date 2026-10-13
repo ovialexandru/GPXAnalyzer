@@ -10,6 +10,11 @@ dist-ssr
 coverage
 *.local
 
+# Playwright output
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Raw GPX recordings (private); only trimmed fixtures in src/test/fixtures are committed
 GpxFiles/
 
