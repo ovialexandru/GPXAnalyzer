@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import styles from './App.module.css'
+import { TrackMap } from './map/index.ts'
 import { FileDropZone, TrackSummary, useGpxUpload } from './upload/index.ts'
 
 function preventDefault(e: Event) {
@@ -32,7 +33,12 @@ function App() {
           {error.message}
         </p>
       )}
-      {loaded && <TrackSummary loaded={loaded} />}
+      {loaded && (
+        <>
+          <TrackSummary loaded={loaded} />
+          <TrackMap track={loaded.track} />
+        </>
+      )}
     </main>
   )
 }

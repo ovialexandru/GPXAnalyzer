@@ -3,6 +3,9 @@ import noEleTime from '../test/fixtures/no-ele-time.gpx?raw'
 import run from '../test/fixtures/run.gpx?raw'
 import App from './App.tsx'
 
+// jsdom has no layout or canvas; TrackMap's own tests cover the Leaflet calls.
+vi.mock('leaflet', () => import('../test/leafletMock.ts'))
+
 function gpxFile(content: string, name: string): File {
   return new File([content], name, { type: 'application/gpx+xml' })
 }
@@ -57,6 +60,19 @@ describe('App', () => {
     expect(within(summary).getByText('150')).toBeInTheDocument()
     expect(within(summary).getByText('Run fixture')).toBeInTheDocument()
     expect(badges(summary)).toEqual(['Elevation', 'Time', 'Heart rate', 'Cadence'])
+  })
+
+  it('shows the track map only after a successful upload', async () => {
+    renderApp().pick(gpxFile(run, 'run.gpx'))
+    expect(screen.queryByRole('region', { name: 'Track map' })).not.toBeInTheDocument()
+    await findSummary()
+    expect(screen.getByRole('region', { name: 'Track map' })).toBeInTheDocument()
+  })
+
+  it('shows no track map for a bad file', async () => {
+    renderApp().pick(gpxFile('hello', 'notes.txt'))
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('region', { name: 'Track map' })).not.toBeInTheDocument()
   })
 
   it('shows the summary for a dropped file', async () => {

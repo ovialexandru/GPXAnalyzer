@@ -30,7 +30,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['**/ui', '**/ui/**', 'react', 'react-dom'],
+              group: ['**/ui', '**/ui/**', 'react', 'react-dom', 'leaflet', 'leaflet/**'],
               message: 'model/parser/metrics must not depend on UI.',
             },
           ],

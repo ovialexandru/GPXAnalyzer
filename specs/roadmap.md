@@ -30,9 +30,9 @@ Goal: user can load a file.
 
 ### Phase 5 – Map
 Goal: track visible on a map.
-- [ ] Leaflet map with OSM tiles
-- [ ] Polyline drawn, map fits bounds
-- [ ] Start/end markers
+- [x] Leaflet map with OSM tiles
+- [x] Polyline drawn, map fits bounds
+- [x] Start/end markers
 
 ### Phase 6 – Derived metrics
 Goal: computed series and totals.

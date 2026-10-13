@@ -1,0 +1,32 @@
+.map {
+  height: 60vh;
+  min-height: 320px;
+  border: 1px solid #d5dbe5;
+  border-radius: 12px;
+  overflow: hidden;
+  /* Keep Leaflet's panes and controls (z-index up to 1000) from overlapping later page content. */
+  isolation: isolate;
+}
+
+.fitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.fitButton:hover {
+  background: #f4f4f4;
+}
+
+.fitButton:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
