@@ -78,7 +78,7 @@ Goal: select a segment.
 
 ### Phase 13 – Selection stats
 Goal: stats for the selection (or whole track if none), reusing the Phase 9 stat functions.
-- [ ] Distance, duration, avg/max speed, avg pace, elevation gain/loss
+- [ ] Distance, duration, elevation gain, avg/max speed, avg HR (the Phase 9 summary set)
 - [ ] Updates live as selection changes
 
 ### Phase 14 – HR and cadence
