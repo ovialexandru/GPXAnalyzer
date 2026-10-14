@@ -46,7 +46,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 ## Design
 - [ ] One global x-axis state in `ChartsPanel`; no global store added.
 - [ ] Option builders and `xAxis.ts` are pure; display-unit conversion happens there, metrics stay SI.
-- [ ] `dataToPoint` maps every data item to its point index (or `-1` for breaks), ready for Phase 9.
+- [ ] `dataToPoint` maps every data item to its point index (or `-1` for breaks), ready for Phase 10.
 - [ ] The toggles are native radio inputs in a `<fieldset>` with a `<legend>`.
 - [ ] Styles use CSS modules; colours and sizes in `chartTheme.ts`.
 - [ ] No new dependencies; no module over ~200 lines.

@@ -12,9 +12,9 @@ Also included (decided with the user):
 - On the time axis the lines **break at segment gaps**. Pace is `null` below 0.5 m/s (stopped, from Phase 6) so it doesn't spike; speed shows 0.
 
 ## Out of scope
-- Hover linking, ECharts `connect` (Phase 9); dataZoom (Phase 10); brush (Phase 11); selection stats (Phase 12).
-- HR/cadence charts (Phase 13).
-- Metric/imperial toggle, responsive layout, touch gestures (Phase 14).
+- Hover linking, ECharts `connect` (Phase 10); dataZoom (Phase 11); brush (Phase 12); selection stats (Phase 13).
+- HR/cadence charts (Phase 14).
+- Metric/imperial toggle, responsive layout, touch gestures (Phase 15).
 - Per-sport defaults (pace for running, speed for cycling), clock-time axis, moving time, splits (post-MVP).
 - Remembering toggle choices across page reloads.
 
@@ -96,10 +96,10 @@ function ChartsPanel(props: { track: Track; metrics: TrackMetrics }): JSX.Elemen
 | Speed vs pace | One chart, Speed/Pace switch, default Speed | Same information, one chart's space; per-sport default is post-MVP |
 | Pace axis | Inverted, min/km, capped at 20:00 min/km | Faster is up like speed; cap keeps walking/stops from flattening the running pace line (Claude's call, easy to drop) |
 | Time axis | Elapsed seconds, pauses included, nice tick interval | Comparable across tracks; consistent with `totals.duration` |
-| Toggle scope | One global x-axis toggle | Charts never disagree, ready for shared hover/zoom in Phases 9–10 |
+| Toggle scope | One global x-axis toggle | Charts never disagree, ready for shared hover/zoom in Phases 10–11 |
 | No time | "Time" disabled, speed empty state | Explains why; never shows an empty time axis |
-| Toggle state | `useState` in `ChartsPanel`, kept across tracks | No global store needed until Phase 9 |
-| Segment breaks | One `[x, null]` break item between segments on the time axis, with a `dataToPoint` index map | Single series per chart keeps tooltips simple; the map gives Phase 9 point indices |
+| Toggle state | `useState` in `ChartsPanel`, kept across tracks | No global store needed until Phase 10 |
+| Segment breaks | One `[x, null]` break item between segments on the time axis, with a `dataToPoint` index map | Single series per chart keeps tooltips simple; the map gives Phase 10 point indices |
 | Stopped | Speed 0, pace `null` → gap | No infinite pace spikes |
 | Toggle control | Native radio inputs in a `<fieldset>` | Accessible by default, tap-friendly |
 | Speed chart without time on distance axis | Empty state, not a chart | Speed needs time on either axis |

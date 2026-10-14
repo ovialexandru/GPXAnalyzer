@@ -26,6 +26,11 @@ export function formatElevation(meters: number): string {
   return `${fixed(meters, 0)} m`
 }
 
+/** Whole beats per minute: "144 bpm". */
+export function formatHeartRate(bpm: number): string {
+  return `${fixed(bpm, 0)} bpm`
+}
+
 /** km/h with one decimal: "12.3 km/h". */
 export function formatSpeed(metersPerSecond: number): string {
   return `${fixed(metersPerSecond * 3.6, 1)} km/h`

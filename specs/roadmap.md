@@ -51,34 +51,41 @@ Goal: second chart and x-axis choice.
 - [x] Speed/pace chart
 - [x] Toggle x-axis: distance / time
 
-### Phase 9 – Hover linking
+### Phase 9 – Summary stats
+Goal: whole-track stats at a glance.
+- [x] Track name as the summary heading, file name beside it
+- [x] Points and elevation loss removed from the summary
+- [x] Avg speed (moving), max speed, avg HR (time-weighted)
+- [x] Unit tests
+
+### Phase 10 – Hover linking
 Goal: map and charts share a cursor.
 - [ ] Hover on chart moves a marker on the map
 - [ ] Hover on track shows position on charts
 
-### Phase 10 – Chart zoom
+### Phase 11 – Chart zoom
 Goal: zoom into a section.
 - [ ] dataZoom (wheel/drag + slider)
 - [ ] Zoom synced across charts
 - [ ] Reset button
 
-### Phase 11 – Range selection
+### Phase 12 – Range selection
 Goal: select a segment.
 - [ ] Brush selection on chart
 - [ ] Selected segment highlighted on map
 - [ ] Clear selection
 
-### Phase 12 – Selection stats
-Goal: stats for the selection (or whole track if none).
+### Phase 13 – Selection stats
+Goal: stats for the selection (or whole track if none), reusing the Phase 9 stat functions.
 - [ ] Distance, duration, avg/max speed, avg pace, elevation gain/loss
 - [ ] Updates live as selection changes
 
-### Phase 13 – HR and cadence
+### Phase 14 – HR and cadence
 Goal: optional sensor data.
 - [ ] Charts shown only when data exists
 - [ ] Avg/max in stats panel
 
-### Phase 14 – Layout and polish
+### Phase 15 – Layout and polish
 Goal: usable on desktop and mobile.
 - [ ] Responsive, mobile-first layout (map + charts + stats stack on narrow screens)
 - [ ] Touch support: pinch/drag zoom, touch brush selection, tap-sized controls
@@ -86,11 +93,11 @@ Goal: usable on desktop and mobile.
 - [ ] Metric/imperial toggle
 - [ ] Empty, loading, and error states
 
-### Phase 15 – E2E tests
+### Phase 16 – E2E tests
 Goal: protect the main flow.
 - [ ] Playwright: upload -> hover -> zoom -> select -> stats visible
 
-### Phase 16 – Deploy
+### Phase 17 – Deploy
 Goal: public static site.
 - [ ] CI runs lint, unit, e2e, build
 - [ ] Auto-deploy to static host

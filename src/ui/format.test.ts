@@ -2,6 +2,7 @@ import {
   formatDistance,
   formatDuration,
   formatElevation,
+  formatHeartRate,
   formatPace,
   formatSpeed,
 } from './format.ts'
@@ -60,5 +61,15 @@ describe('formatPace', () => {
     [0.2999, '5:00 /km'],
   ])('%f s/m → %s (never x:60)', (pace, text) => {
     expect(formatPace(pace)).toBe(text)
+  })
+})
+
+describe('formatHeartRate', () => {
+  it.each([
+    [143.82, '144 bpm'],
+    [155.95, '156 bpm'],
+    [60, '60 bpm'],
+  ])('%f → %s', (bpm, text) => {
+    expect(formatHeartRate(bpm)).toBe(text)
   })
 })

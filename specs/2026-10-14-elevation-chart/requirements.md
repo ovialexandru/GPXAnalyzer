@@ -14,9 +14,9 @@ Also included (decided with the user):
 
 ## Out of scope
 - Speed/pace chart and the distance/time x-axis toggle (Phase 8).
-- Hover linking with the map and between charts, ECharts `connect` (Phase 9).
-- dataZoom (Phase 10), brush selection (Phase 11), selection stats (Phase 12).
-- Responsive layout, touch gestures, metric/imperial toggle (Phase 14).
+- Hover linking with the map and between charts, ECharts `connect` (Phase 10).
+- dataZoom (Phase 11), brush selection (Phase 12), selection stats (Phase 13).
+- Responsive layout, touch gestures, metric/imperial toggle (Phase 15).
 - Gradient colouring, min/max markers, elevation smoothing for display.
 
 ## API
@@ -64,7 +64,7 @@ function ElevationChart(props: { track: Track; metrics: TrackMetrics }): JSX.Ele
 ## Decisions
 | Decision | Choice | Reason |
 |---|---|---|
-| Integration | Own `useECharts` hook (callback ref, like `useLeafletMap`) | Full control over instance, events and options for Phases 9–11; no wrapper dependency |
+| Integration | Own `useECharts` hook (callback ref, like `useLeafletMap`) | Full control over instance, events and options for Phases 10–12; no wrapper dependency |
 | Imports | `echarts/core` + only the chart, components and renderer used | Smaller bundle than full `echarts`; each phase registers what it needs |
 | Renderer | Canvas | Fast for many points; SVG is not needed |
 | Option building | Pure `buildElevationOption` | Unit-testable without a canvas; the component only wires it up |
@@ -72,8 +72,8 @@ function ElevationChart(props: { track: Track; metrics: TrackMetrics }): JSX.Ele
 | Look | Filled area + axis tooltip | Familiar elevation profile; tooltip gives exact values before hover linking exists |
 | Sampling | `sampling: 'lttb'` | Keeps shape on large tracks (techstack performance note) |
 | Animation | Off | Instant redraw on new tracks; avoids timing issues in tests |
-| Placement | Below the map, 220 px | Simple stack for now; full layout in Phase 14 |
-| Data | `[km, m \| null]` pairs, one per point, same order as `track.points` | Data index = point index, ready for hover linking in Phase 9 |
+| Placement | Below the map, 220 px | Simple stack for now; full layout in Phase 15 |
+| Data | `[km, m \| null]` pairs, one per point, same order as `track.points` | Data index = point index, ready for hover linking in Phase 10 |
 | Unit tests | `vi.mock('echarts/core')` via `src/test/echartsMock.ts`, plus a `ResizeObserver` stub | jsdom has no canvas or layout; real rendering checked by Playwright |
 | Lint | Add `echarts`, `echarts/**` to the restricted imports for `model`/`parser`/`metrics` | Keeps the chart library in the UI layer |
 | Location | `src/ui/charts/` | Organised by feature, like `src/ui/map/` |

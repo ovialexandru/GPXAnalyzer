@@ -32,12 +32,58 @@ describe('getTrackMetrics', () => {
       elapsed: [],
       speed: [],
       pace: [],
-      totals: { distance: 0, duration: null, elevationGain: null, elevationLoss: null },
+      totals: {
+        distance: 0,
+        duration: null,
+        elevationGain: null,
+        elevationLoss: null,
+        movingTime: null,
+        avgSpeed: null,
+        maxSpeed: null,
+        avgHeartRate: null,
+      },
     })
   })
 
+  it.each([
+    ['run.gpx', run, 644, 8.21, 13.6, 143.82],
+    ['bike.gpx', bike, 517, 17.48, 33.73, 155.95],
+  ])('%s: moving time, avg/max speed and avg HR', (_n, text, time, avgKmh, maxKmh, bpm) => {
+    const { totals } = getTrackMetrics(parseTrack(text))
+    expect(totals.movingTime).toBe(time)
+    expect(Math.abs(totals.avgSpeed! * 3.6 - avgKmh)).toBeLessThanOrEqual(0.01)
+    expect(Math.abs(totals.maxSpeed! * 3.6 - maxKmh)).toBeLessThanOrEqual(0.01)
+    expect(Math.abs(totals.avgHeartRate! - bpm)).toBeLessThanOrEqual(0.05)
+  })
+
+  it('no-ele-time.gpx: no moving stats, speeds or HR', () => {
+    const { totals } = getTrackMetrics(parseTrack(noEleTime))
+    expect(totals).toMatchObject({
+      movingTime: null,
+      avgSpeed: null,
+      maxSpeed: null,
+      avgHeartRate: null,
+    })
+  })
+
+  it('never moving: moving time 0, avg speed null, max speed 0', () => {
+    const points = constantSpeedPoints(10, 0)
+    const { totals } = getTrackMetrics({ points, segmentStarts: [0] })
+    expect(totals).toMatchObject({ movingTime: 0, avgSpeed: null, maxSpeed: 0 })
+  })
+
+  it('max speed is the largest smoothed speed', () => {
+    const m = getTrackMetrics(parseTrack(bike))
+    const max = Math.max(...m.speed.filter((v): v is number => v !== null))
+    expect(m.totals.maxSpeed).toBe(max)
+  })
+
   it('computes 100 000 points in under 1 s', () => {
-    const points = constantSpeedPoints(100_000, 3).map((p, i) => ({ ...p, ele: i % 50 }))
+    const points = constantSpeedPoints(100_000, 3).map((p, i) => ({
+      ...p,
+      ele: i % 50,
+      hr: 120 + (i % 40),
+    }))
     const started = performance.now()
     const m = getTrackMetrics({ points, segmentStarts: [0, 50_000] })
     expect(performance.now() - started).toBeLessThan(1000)

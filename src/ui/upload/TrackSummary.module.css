@@ -4,9 +4,25 @@
   border-radius: 12px;
 }
 
-.fileName {
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
   margin: 0 0 0.5rem;
+}
+
+.title {
+  margin: 0;
   font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.fileName {
+  margin: 0;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: #5b6475;
   overflow-wrap: anywhere;
 }
 

@@ -15,8 +15,8 @@ Also included (decided with the user):
 
 ## Out of scope
 - Map, charts, metrics (Phases 5–8).
-- Shared state via context/Zustand (comes with hover linking in Phase 9).
-- Whole-window drop target and overlay; full responsive layout and polish (Phase 14).
+- Shared state via context/Zustand (comes with hover linking in Phase 10).
+- Whole-window drop target and overlay; full responsive layout and polish (Phase 15).
 - Multi-file loading (post-MVP); only the first dropped file is used.
 - Parsing in a Web Worker; performance tuning beyond "no noticeable freeze" on real files.
 
@@ -79,13 +79,14 @@ function useGpxUpload(): {
 ## UI
 - `FileDropZone`: a visible zone with text "Drop a GPX file here or" and a real `<button>` "Choose file" that opens a hidden `<input type="file" accept=".gpx">`. Drag-over adds a highlight class. Tap target at least 44 px high.
 - `TrackSummary`: file name, point count (locale-formatted), track name when present, badges for available data.
+  > **Superseded by Phase 9 (`specs/2026-10-14-summary-stats`):** the track name becomes the heading with the file name beside it, and the point count is no longer shown.
 - Errors render in an element with `role="alert"`; the loading text and notice in a `role="status"` region.
 - `App` composes `useGpxUpload` + `FileDropZone` + `TrackSummary` + error/status; no component over ~200 lines.
 
 ## Decisions
 | Decision | Choice | Reason |
 |---|---|---|
-| Track state | `useState` inside `useGpxUpload`, used by `App` | Nothing else needs it yet; context/Zustand arrives with Phase 9 |
+| Track state | `useState` inside `useGpxUpload`, used by `App` | Nothing else needs it yet; context/Zustand arrives with Phase 10 |
 | Structure | Pure `loadGpxFile` + `useGpxUpload` hook + presentational components | File checks and parsing are unit-testable without React; components stay small |
 | Replacement | Replace only on success; bad file keeps previous track | User never loses a working view because of one wrong file |
 | Pre-parse checks | Extension, empty, 50 MB, multiple files | Clear messages instead of generic XML errors; 50 MB covers multi-hour tracks with extensions |
@@ -95,7 +96,7 @@ function useGpxUpload(): {
 | Styling | CSS modules (`*.module.css`) per component | Scoped class names; convention for later phases. Vite supports them out of the box |
 | Loading state | Simple "Reading file…" text | Large files take noticeable time on phones |
 | Stale results | Request counter in the hook; ignore results from older requests | Picking a second file quickly must not show the first one |
-| E2E | Playwright now (Chromium only), one upload smoke test | Sets up the tool early; Phases 14–15 extend it |
+| E2E | Playwright now (Chromium only), one upload smoke test | Sets up the tool early; Phases 15–16 extend it |
 | Location | `src/ui/upload/` for the upload feature | Keeps `src/ui` organized by feature as it grows |
 | Branch / directory | `2026-10-13-upload-ui` | Spec naming convention `yyyy-mm-dd-feature-name` |
 

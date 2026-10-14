@@ -12,11 +12,12 @@ Also included (decided with the user):
 - A "stopped" speed threshold (0.5 m/s) below which pace is `null`. It was decided together with the Phase 8 chart behavior, but the pace series belongs here.
 
 ## Out of scope
-- Charts (Phases 7–8), selection stats and avg/max speed (Phase 12), HR/cadence stats (Phase 13).
-- Metric/imperial toggle (Phase 14). Totals are shown in metric only.
+- Charts (Phases 7–8), selection stats and avg/max speed (Phase 13), HR/cadence stats (Phase 14).
+  > **Superseded by Phase 9 (`specs/2026-10-14-summary-stats`):** whole-track avg/max speed and avg HR are added there.
+- Metric/imperial toggle (Phase 15). Totals are shown in metric only.
 - Moving vs stopped time, splits, per-sport smoothing or thresholds (post-MVP).
 - Elevation smoothing beyond the hysteresis threshold, and DEM/terrain correction.
-- Shared state via context/Zustand (Phase 9).
+- Shared state via context/Zustand (Phase 10).
 
 ## API
 ```ts
@@ -92,6 +93,8 @@ All new functions and types are re-exported from `src/metrics/index.ts`.
 | Track with no elevation | `getElevationChange` returns `null`; totals gain/loss `null` |
 
 ## UI
+> **Superseded by Phase 9 (`specs/2026-10-14-summary-stats`):** "Points" and "Elevation loss" are no longer shown in the summary (loss stays in `TrackTotals`); Avg speed, Max speed and Avg HR are added.
+
 `TrackSummary` gets a `totals: TrackTotals` prop and shows, after "Points":
 - **Distance** – always. Under 1 km: whole meters ("850 m"); otherwise km with 2 decimals ("2.52 km").
 - **Duration** – only when `duration` is not `null`. `m:ss` under one hour ("10:44"), else `h:mm:ss` ("1:02:03").

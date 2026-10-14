@@ -7,15 +7,15 @@ From `specs/roadmap.md` Phase 5:
 - Start/end markers.
 
 Also included (decided with the user):
-- Scale control (metric only; the metric/imperial toggle is Phase 14).
+- Scale control (metric only; the metric/imperial toggle is Phase 15).
 - A "Fit to track" control that re-fits the bounds after the user pans or zooms away.
 - Canvas renderer (`preferCanvas: true`) so large tracks stay smooth.
 - Tooltips on the start/end markers: "Start" / "Finish", plus the local time when the point has one.
 
 ## Out of scope
-- Hover marker and cursor linking with charts (Phase 9); selected-segment highlight (Phase 11).
-- Shared state via context/Zustand (Phase 9).
-- Responsive/mobile layout work, phone-viewport E2E, metric/imperial toggle (Phase 14).
+- Hover marker and cursor linking with charts (Phase 10); selected-segment highlight (Phase 12).
+- Shared state via context/Zustand (Phase 10).
+- Responsive/mobile layout work, phone-viewport E2E, metric/imperial toggle (Phase 15).
 - Other tile providers, layer switcher, satellite imagery, offline tiles.
 - Downsampling the polyline ourselves; Leaflet's built-in `smoothFactor` simplification is enough for now.
 - Tracks crossing the antimeridian.
@@ -69,12 +69,12 @@ function TrackMap(props: { track: Track }): JSX.Element
 ## Decisions
 | Decision | Choice | Reason |
 |---|---|---|
-| Leaflet integration | Plain `leaflet` + small hooks, no react-leaflet | Full control over layer updates, needed for the hover marker (Phase 9) and selection highlight (Phase 11) on large tracks; one dependency fewer |
+| Leaflet integration | Plain `leaflet` + small hooks, no react-leaflet | Full control over layer updates, needed for the hover marker (Phase 10) and selection highlight (Phase 12) on large tracks; one dependency fewer |
 | Segments | One polyline per segment from `segmentStarts` | Gaps (paused GPS) are not drawn as fake straight lines |
 | Markers | `circleMarker` green/red | No image assets, so no Vite icon-path workaround; renders on canvas |
 | Geometry helpers | `src/metrics/geometry.ts`, plain tuples/objects | Track → derived data is the metrics layer's job; pure and unit-tested without Leaflet |
 | Map lifecycle | One map instance; swap a `LayerGroup` when the track changes | No tile reload flicker or re-init cost when loading another file |
-| Placement | Below the summary, only when a track is loaded, fixed `60vh` / min 320 px | Simple for now; full layout comes in Phase 14 |
+| Placement | Below the summary, only when a track is loaded, fixed `60vh` / min 320 px | Simple for now; full layout comes in Phase 15 |
 | Renderer | `preferCanvas: true` | Tens of thousands of points stay interactive (mission principle 4) |
 | Fit control | Custom `L.Control` with a `<button>` | Lives inside the map like the zoom control; accessible and keyboard-usable |
 | Time in tooltips | Formatted in the UI with `toLocaleString()` | SI/epoch in the model; formatting only in the UI (techstack conventions) |

@@ -23,7 +23,7 @@ test('shows the elevation profile, its tooltip and the empty state', async ({ pa
   await expect(chart.locator('canvas')).toHaveCount(0)
 
   await input.setInputFiles(BIKE_GPX)
-  await expect(page.getByRole('heading', { name: 'bike.gpx' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Bike fixture' })).toBeVisible()
   await expect(chart.locator('canvas')).toHaveCount(1)
   await expect(page.getByRole('region', { name: 'Elevation chart' })).toHaveCount(1)
 

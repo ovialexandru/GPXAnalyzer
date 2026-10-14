@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import { getAvailableFields, type AvailableFields, type TrackTotals } from '../../metrics/index.ts'
-import { formatDistance, formatDuration, formatElevation } from '../format.ts'
+import {
+  formatDistance,
+  formatDuration,
+  formatElevation,
+  formatHeartRate,
+  formatSpeed,
+} from '../format.ts'
 import type { LoadedTrack } from './loadGpxFile.ts'
 import styles from './TrackSummary.module.css'
 
@@ -20,7 +26,7 @@ interface TrackSummaryProps {
   totals: TrackTotals
 }
 
-/** File name, point count, totals, track name and which optional data the track has. */
+/** Track name and file name, whole-track stats, and which optional data the track has. */
 export function TrackSummary({ loaded, totals }: TrackSummaryProps) {
   const { fileName, track } = loaded
   const fields = useMemo(() => getAvailableFields(track), [track])
@@ -30,23 +36,19 @@ export function TrackSummary({ loaded, totals }: TrackSummaryProps) {
     ['Distance', formatDistance(totals.distance)],
     ['Duration', orNull(totals.duration, formatDuration)],
     ['Elevation gain', orNull(totals.elevationGain, formatElevation)],
-    ['Elevation loss', orNull(totals.elevationLoss, formatElevation)],
+    ['Avg speed', orNull(totals.avgSpeed, formatSpeed)],
+    ['Max speed', orNull(totals.maxSpeed, formatSpeed)],
+    ['Avg HR', orNull(totals.avgHeartRate, formatHeartRate)],
   ]
 
   return (
     <section className={styles.summary} aria-label="Loaded track">
-      <h2 className={styles.fileName}>{fileName}</h2>
+      {/* The track name leads; the file name follows it, or is the heading when unnamed. */}
+      <div className={styles.header}>
+        <h2 className={styles.title}>{track.name || fileName}</h2>
+        {track.name && <p className={styles.fileName}>{fileName}</p>}
+      </div>
       <dl className={styles.details}>
-        {track.name && (
-          <div>
-            <dt>Track</dt>
-            <dd>{track.name}</dd>
-          </div>
-        )}
-        <div>
-          <dt>Points</dt>
-          <dd>{track.points.length.toLocaleString()}</dd>
-        </div>
         {stats.map(
           ([label, value]) =>
             value !== null && (

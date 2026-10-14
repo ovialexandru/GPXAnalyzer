@@ -14,8 +14,8 @@ Also included (decided with the user):
 ## Out of scope
 - Leaflet, ECharts, Zustand, Playwright (added in the phases that need them).
 - Track/TrackPoint types and GPX fixtures (Phase 2), parser (Phase 3), any UI beyond a title.
-- CI and deployment (Phase 16).
-- Mobile-first base CSS (belongs to Phase 14; only the viewport meta tag is added now).
+- CI and deployment (Phase 17).
+- Mobile-first base CSS (belongs to Phase 15; only the viewport meta tag is added now).
 
 ## Decisions
 | Decision | Choice | Reason |

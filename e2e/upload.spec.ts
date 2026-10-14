@@ -11,8 +11,8 @@ test('loads a GPX file and then rejects a non-GPX file', async ({ page }) => {
 
   await input.setInputFiles(RUN_GPX)
   const summary = page.getByRole('region', { name: 'Loaded track' })
-  await expect(summary.getByRole('heading', { name: 'run.gpx' })).toBeVisible()
-  await expect(summary.getByText('150', { exact: true })).toBeVisible()
+  await expect(summary.getByRole('heading', { name: 'Run fixture' })).toBeVisible()
+  await expect(summary.getByText('run.gpx', { exact: true })).toBeVisible()
 
   await input.setInputFiles({
     name: 'notes.txt',
@@ -21,15 +21,28 @@ test('loads a GPX file and then rejects a non-GPX file', async ({ page }) => {
   })
   await expect(page.getByRole('alert')).toHaveText('Please choose a .gpx file.')
   // The previous track stays shown.
-  await expect(summary.getByRole('heading', { name: 'run.gpx' })).toBeVisible()
+  await expect(summary.getByRole('heading', { name: 'Run fixture' })).toBeVisible()
 })
 
-test('shows the totals of a two-segment track', async ({ page }) => {
+test('shows the stats of a two-segment track', async ({ page }) => {
   await page.goto('/')
   await page.locator('input[type="file"]').setInputFiles(BIKE_GPX)
   const summary = page.getByRole('region', { name: 'Loaded track' })
-  await expect(summary.getByRole('heading', { name: 'bike.gpx' })).toBeVisible()
-  for (const value of ['2.52 km', '11:57', '22 m', '18 m']) {
+  await expect(summary.getByRole('heading', { name: 'Bike fixture' })).toBeVisible()
+  await expect(summary.getByText('bike.gpx', { exact: true })).toBeVisible()
+  for (const value of ['2.52 km', '11:57', '22 m', '17.5 km/h', '33.7 km/h', '156 bpm']) {
     await expect(summary.getByText(value, { exact: true })).toBeVisible()
   }
+  for (const label of ['Track', 'Points', 'Elevation loss']) {
+    await expect(summary.getByText(label, { exact: true })).toHaveCount(0)
+  }
+})
+
+test('no horizontal page scroll at phone width', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 })
+  await page.goto('/')
+  await page.locator('input[type="file"]').setInputFiles(BIKE_GPX)
+  await expect(page.getByRole('heading', { name: 'Bike fixture' })).toBeVisible()
+  const overflow = await page.evaluate('document.documentElement.scrollWidth - innerWidth')
+  expect(overflow).toBeLessThanOrEqual(0)
 })

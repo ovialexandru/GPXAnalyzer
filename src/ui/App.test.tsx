@@ -66,33 +66,35 @@ describe('App', () => {
   it('shows the summary for a file chosen with the picker', async () => {
     renderApp().pick(gpxFile(run, 'run.gpx'))
     const summary = await findSummary()
-    expect(within(summary).getByRole('heading', { name: 'run.gpx' })).toBeInTheDocument()
-    expect(within(summary).getByText('150')).toBeInTheDocument()
-    expect(within(summary).getByText('Run fixture')).toBeInTheDocument()
+    expect(within(summary).getByRole('heading', { name: 'Run fixture' })).toBeInTheDocument()
+    expect(within(summary).getByText('run.gpx')).toBeInTheDocument()
     expect(badges(summary)).toEqual(['Elevation', 'Time', 'Heart rate', 'Cadence'])
   })
 
-  it('shows distance, duration and elevation totals', async () => {
+  it('uses the file name as the heading when the track has no name', async () => {
+    renderApp().pick(gpxFile(run.replace(/<name>[^<]*<\/name>/g, ''), 'unnamed.gpx'))
+    const summary = await findSummary()
+    expect(within(summary).getByRole('heading', { name: 'unnamed.gpx' })).toBeInTheDocument()
+    expect(within(summary).getAllByText('unnamed.gpx')).toHaveLength(1)
+  })
+
+  it('shows the whole-track stats in order', async () => {
     renderApp().pick(gpxFile(run, 'run.gpx'))
     const summary = await findSummary()
-    expect(details(summary)).toEqual({
-      Track: 'Run fixture',
-      Points: '150',
-      Distance: '1.47 km',
-      Duration: '10:44',
-      'Elevation gain': '6 m',
-      'Elevation loss': '3 m',
-    })
+    expect(Object.entries(details(summary))).toEqual([
+      ['Distance', '1.47 km'],
+      ['Duration', '10:44'],
+      ['Elevation gain', '6 m'],
+      ['Avg speed', '8.2 km/h'],
+      ['Max speed', '13.6 km/h'],
+      ['Avg HR', '144 bpm'],
+    ])
   })
 
   it('shows only the distance for a track without time or elevation', async () => {
     renderApp().pick(gpxFile(noEleTime, 'no-ele-time.gpx'))
     const summary = await findSummary()
-    expect(details(summary)).toEqual({
-      Track: 'No elevation or time fixture',
-      Points: '80',
-      Distance: '1.72 km',
-    })
+    expect(details(summary)).toEqual({ Distance: '1.72 km' })
   })
 
   it('shows the track map only after a successful upload', async () => {
@@ -127,14 +129,14 @@ describe('App', () => {
   it('shows the summary for a dropped file', async () => {
     renderApp().drop(gpxFile(run, 'run.gpx'))
     const summary = await findSummary()
-    expect(within(summary).getByRole('heading', { name: 'run.gpx' })).toBeInTheDocument()
-    expect(within(summary).getByText('150')).toBeInTheDocument()
+    expect(within(summary).getByRole('heading', { name: 'Run fixture' })).toBeInTheDocument()
+    expect(within(summary).getByText('run.gpx')).toBeInTheDocument()
   })
 
   it('shows no badges for a track without optional data', async () => {
     renderApp().pick(gpxFile(noEleTime, 'no-ele-time.gpx'))
     const summary = await findSummary()
-    expect(within(summary).getByText('80')).toBeInTheDocument()
+    expect(within(summary).getByText('no-ele-time.gpx')).toBeInTheDocument()
     expect(badges(summary)).toEqual([])
   })
 
@@ -158,7 +160,7 @@ describe('App', () => {
     await findSummary()
     app.pick(gpxFile('hello', 'notes.txt'))
     expect(await screen.findByRole('alert')).toHaveTextContent('Please choose a .gpx file.')
-    expect(screen.getByRole('heading', { name: 'run.gpx' })).toBeInTheDocument()
+    expect(screen.getByText('run.gpx')).toBeInTheDocument()
   })
 
   it('clears the error when a good file follows a bad one', async () => {
@@ -173,7 +175,7 @@ describe('App', () => {
   it('loads only the first of several dropped files and shows a notice', async () => {
     renderApp().drop(gpxFile(run, 'first.gpx'), gpxFile(noEleTime, 'second.gpx'))
     const summary = await findSummary()
-    expect(within(summary).getByRole('heading', { name: 'first.gpx' })).toBeInTheDocument()
+    expect(within(summary).getByText('first.gpx')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent(
       'Only one file at a time is supported; loaded first.gpx.',
     )
@@ -184,7 +186,7 @@ describe('App', () => {
     app.drop(gpxFile(run, 'first.gpx'), gpxFile(run, 'second.gpx'))
     await findSummary()
     app.pick(gpxFile(noEleTime, 'third.gpx'))
-    await screen.findByRole('heading', { name: 'third.gpx' })
+    await screen.findByText('third.gpx')
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
@@ -202,13 +204,13 @@ describe('App', () => {
     const slow = pendingFile(run, 'slow.gpx')
     app.pick(slow.file)
     app.pick(gpxFile(noEleTime, 'fast.gpx'))
-    await screen.findByRole('heading', { name: 'fast.gpx' })
+    await screen.findByText('fast.gpx')
 
     slow.resolve()
     // Let the stale read settle; it must not replace the newer track.
     await new Promise((r) => setTimeout(r, 0))
-    expect(screen.getByRole('heading', { name: 'fast.gpx' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'slow.gpx' })).not.toBeInTheDocument()
+    expect(screen.getByText('fast.gpx')).toBeInTheDocument()
+    expect(screen.queryByText('slow.gpx')).not.toBeInTheDocument()
   })
 
   it('prevents the browser from opening files dropped outside the drop zone', () => {
