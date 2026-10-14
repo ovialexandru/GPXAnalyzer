@@ -10,13 +10,20 @@ export function buildElevationOption(
   track: Track,
   metrics: TrackMetrics,
   mode: XAxisMode,
+  withSlider = false,
 ): LineChart {
-  return buildLineOption(track, metrics, mode, {
-    ys: track.points.map((p) => p.ele ?? null),
-    color: COLORS.elevation,
-    areaColor: COLORS.elevationFill,
-    yRange: { scale: true },
-    formatYLabel: formatElevation,
-    formatY: formatElevation,
-  })
+  return buildLineOption(
+    track,
+    metrics,
+    mode,
+    {
+      ys: track.points.map((p) => p.ele ?? null),
+      color: COLORS.elevation,
+      areaColor: COLORS.elevationFill,
+      yRange: { scale: true },
+      formatYLabel: formatElevation,
+      formatY: formatElevation,
+    },
+    withSlider,
+  )
 }

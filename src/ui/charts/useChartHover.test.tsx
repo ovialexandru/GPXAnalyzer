@@ -188,6 +188,7 @@ describe('useChartHover', () => {
     const { store, track, metrics, rerender } = setup()
     const subscribe = vi.spyOn(store, 'subscribe')
     rerender(bothCharts(track, metrics, 'time'))
-    expect(subscribe).toHaveBeenCalledTimes(2)
+    // Hover and zoom, on each chart.
+    expect(subscribe).toHaveBeenCalledTimes(4)
   })
 })

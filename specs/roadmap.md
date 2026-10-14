@@ -66,9 +66,9 @@ Goal: map and charts share a cursor.
 
 ### Phase 11 – Chart zoom
 Goal: zoom into a section.
-- [ ] dataZoom (wheel/drag + slider)
-- [ ] Zoom synced across charts
-- [ ] Reset button
+- [x] dataZoom (wheel/drag + slider)
+- [x] Zoom synced across charts
+- [x] Reset button
 
 ### Phase 12 – Range selection
 Goal: select a segment.

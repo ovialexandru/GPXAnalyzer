@@ -287,6 +287,47 @@ describe('App', () => {
     })
   })
 
+  describe('chart zoom', () => {
+    beforeEach(() => {
+      resetEChartsMock()
+      resetLeafletMock()
+      stubAnimationFrames()
+    })
+
+    function resetButton() {
+      return screen.getByRole('button', { name: 'Reset zoom' })
+    }
+
+    function wheelZoom(start: number, end: number) {
+      liveCharts()[0].emit('datazoom', { batch: [{ start, end }] })
+      flushFrame()
+    }
+
+    it('zooming in enables Reset; zooming all the way out disables it', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      expect(resetButton()).toBeDisabled()
+
+      wheelZoom(20, 50)
+      expect(resetButton()).toBeEnabled()
+      wheelZoom(0, 100)
+      expect(resetButton()).toBeDisabled()
+    })
+
+    it('a new file resets the zoom', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      wheelZoom(20, 50)
+      expect(resetButton()).toBeEnabled()
+
+      app.pick(gpxFile(run, 'second.gpx'))
+      await screen.findByText('second.gpx')
+      expect(resetButton()).toBeDisabled()
+    })
+  })
+
   it('prevents the browser from opening files dropped outside the drop zone', () => {
     renderApp()
     const drop = new Event('drop', { cancelable: true })

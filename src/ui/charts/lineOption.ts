@@ -1,8 +1,9 @@
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
-import { AXIS_LABEL, FONT_SIZE, GRID, SPLIT_LINE } from './chartTheme.ts'
+import { AXIS_LABEL, FONT_SIZE, GRID, SLIDER_GRID, SPLIT_LINE } from './chartTheme.ts'
 import type { ChartOption, TooltipParams } from './echarts.ts'
 import { buildLineData, buildXAxis, formatX, type LineData, type XAxisMode } from './xAxis.ts'
+import { buildDataZoom } from './zoomOption.ts'
 
 export interface LineChartSpec {
   /** One y value per point, in display units. */
@@ -36,15 +37,19 @@ export interface LineChart {
   line: LineData
 }
 
-/** Pure: a single-series line chart over the chosen x-axis. Data index follows `line`. */
+/**
+ * Pure: a single-series line chart over the chosen x-axis, zoomable, with the zoom slider under it
+ * when `withSlider`. Data index follows `line`.
+ */
 export function buildLineOption(
   track: Track,
   metrics: TrackMetrics,
   mode: XAxisMode,
   spec: LineChartSpec,
+  withSlider: boolean,
 ): LineChart {
   const line = buildLineData(track, metrics, mode, spec.ys)
-  return { option: lineOption(line, metrics, mode, spec), line }
+  return { option: lineOption(line, metrics, mode, spec, withSlider), line }
 }
 
 function lineOption(
@@ -52,16 +57,18 @@ function lineOption(
   metrics: TrackMetrics,
   mode: XAxisMode,
   spec: LineChartSpec,
+  withSlider: boolean,
 ): ChartOption {
   return {
     animation: false,
-    grid: GRID,
+    grid: withSlider ? SLIDER_GRID : GRID,
     textStyle: { fontSize: FONT_SIZE },
     tooltip: {
       trigger: 'axis',
       formatter: (params) => tooltipText(params, mode, spec.formatY),
     },
     xAxis: buildXAxis(metrics, mode),
+    dataZoom: buildDataZoom(mode, withSlider),
     yAxis: {
       type: 'value',
       ...spec.yRange,

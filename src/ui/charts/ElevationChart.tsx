@@ -4,6 +4,7 @@ import type { Track } from '../../model/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { buildElevationOption } from './elevationOption.ts'
 import { useChartHover } from './useChartHover.ts'
+import { useChartZoom } from './useChartZoom.ts'
 import { useECharts } from './useECharts.ts'
 import type { XAxisMode } from './xAxis.ts'
 
@@ -11,15 +12,17 @@ interface ElevationChartProps {
   track: Track
   metrics: TrackMetrics
   mode: XAxisMode
+  /** Show the zoom slider under this chart. */
+  withSlider?: boolean
 }
 
 /** Elevation profile, or an empty state when the track has no elevation. */
-export function ElevationChart({ track, metrics, mode }: ElevationChartProps) {
+export function ElevationChart({ track, metrics, mode, withSlider = false }: ElevationChartProps) {
   const hasElevation = useMemo(() => getAvailableFields(track).ele, [track])
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => (hasElevation ? buildElevationOption(track, metrics, mode) : null),
-    [hasElevation, track, metrics, mode],
+    () => (hasElevation ? buildElevationOption(track, metrics, mode, withSlider) : null),
+    [hasElevation, track, metrics, mode, withSlider],
   )
 
   // Same chart across tracks and modes: replace the whole option.
@@ -28,6 +31,8 @@ export function ElevationChart({ track, metrics, mode }: ElevationChartProps) {
     chart.setOption(built.option, { notMerge: true })
   }, [chart, built])
 
+  // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
+  useChartZoom(chart, built?.line ?? null, metrics, mode)
   useChartHover(chart, 'elevation', built?.line ?? null, metrics, mode)
 
   return (
@@ -35,6 +40,7 @@ export function ElevationChart({ track, metrics, mode }: ElevationChartProps) {
       label="Elevation chart"
       heading="Elevation"
       emptyMessage={hasElevation ? undefined : 'This track has no elevation data.'}
+      withSlider={withSlider}
       containerRef={containerRef}
     />
   )

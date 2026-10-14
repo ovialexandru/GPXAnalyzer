@@ -10,7 +10,8 @@ interface AxisPointerEvent {
 
 /**
  * Links a line chart to the shared hover: its own axis pointer sets the hover, and a hover from
- * another view shows the pointer here without a tooltip. Does nothing without a chart and its data.
+ * another view shows the pointer here without a tooltip (hidden when the point is outside the zoom
+ * window). Does nothing without a chart and its data.
  */
 export function useChartHover(
   chart: ECharts | null,
@@ -48,9 +49,11 @@ export function useChartHover(
 
     // Under the cursor ECharts draws its own pointer and tooltip; otherwise follow the store.
     const follow = () => {
-      const { hover } = store.getState()
+      const { hover, zoom } = store.getState()
       if (hover?.source === source) return
-      const x = hover && xOfPoint(metrics, mode, hover.index)
+      // A point outside the zoom window has no place on this chart.
+      const visible = hover && (!zoom || (hover.index >= zoom[0] && hover.index <= zoom[1]))
+      const x = visible ? xOfPoint(metrics, mode, hover.index) : null
       const px = x === null ? undefined : chart.convertToPixel({ xAxisIndex: 0 }, x)
       if (typeof px !== 'number' || !Number.isFinite(px)) {
         dispatch({ type: 'updateAxisPointer', currTrigger: 'leave' })

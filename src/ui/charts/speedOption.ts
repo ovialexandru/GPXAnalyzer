@@ -73,11 +73,13 @@ export function buildSpeedOption(
   metrics: TrackMetrics,
   mode: XAxisMode,
   metric: SpeedMetric,
+  withSlider = false,
 ): LineChart {
   return buildLineOption(
     track,
     metrics,
     mode,
     metric === 'speed' ? speedSpec(metrics) : paceSpec(metrics),
+    withSlider,
   )
 }

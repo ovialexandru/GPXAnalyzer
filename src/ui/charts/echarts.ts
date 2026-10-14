@@ -1,15 +1,17 @@
 // The only place ECharts is imported from: tree-shaken core plus what the charts use.
 import { LineChart, type LineSeriesOption } from 'echarts/charts'
 import {
+  DataZoomComponent,
   GridComponent,
   TooltipComponent,
+  type DataZoomComponentOption,
   type GridComponentOption,
   type TooltipComponentOption,
 } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 
-echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
+echarts.use([LineChart, GridComponent, TooltipComponent, DataZoomComponent, CanvasRenderer])
 
 export { echarts }
 export type { ECharts } from 'echarts/core'
@@ -21,5 +23,5 @@ export type {
 } from 'echarts'
 
 export type ChartOption = echarts.ComposeOption<
-  LineSeriesOption | GridComponentOption | TooltipComponentOption
+  LineSeriesOption | GridComponentOption | TooltipComponentOption | DataZoomComponentOption
 >

@@ -7,13 +7,15 @@ const ViewStoreContext = createContext<ViewStore | null>(null)
 interface ViewStoreProviderProps {
   /** A new value starts a fresh store (e.g. the loaded track) without remounting the children. */
   resetKey?: unknown
+  /** Points in the track, so a zoom over all of them is stored as null. Read when a store is created. */
+  pointCount?: number
   children: ReactNode
 }
 
 /** Provides one store per `resetKey`. The context value changes only then, so hovering re-renders nothing here. */
-export function ViewStoreProvider({ resetKey, children }: ViewStoreProviderProps) {
-  const [current, setCurrent] = useState(() => ({ resetKey, store: createViewStore() }))
-  if (current.resetKey !== resetKey) setCurrent({ resetKey, store: createViewStore() })
+export function ViewStoreProvider({ resetKey, pointCount, children }: ViewStoreProviderProps) {
+  const [current, setCurrent] = useState(() => ({ resetKey, store: createViewStore(pointCount) }))
+  if (current.resetKey !== resetKey) setCurrent({ resetKey, store: createViewStore(pointCount) })
   return <ViewStoreContext.Provider value={current.store}>{children}</ViewStoreContext.Provider>
 }
 

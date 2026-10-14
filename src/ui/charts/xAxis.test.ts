@@ -9,7 +9,9 @@ import {
   formatX,
   niceTimeInterval,
   pointAtX,
+  rangeToX,
   xOfPoint,
+  xToRange,
 } from './xAxis.ts'
 
 function fixture(text: string) {
@@ -123,6 +125,73 @@ describe('xOfPoint', () => {
     const { metrics } = fixture(run)
     expect(xOfPoint(metrics, 'distance', 150)).toBeNull()
     expect(xOfPoint(metrics, 'time', 150)).toBeNull()
+  })
+})
+
+describe('rangeToX / xToRange', () => {
+  it.each(['distance', 'time'] as const)('round trip on the %s axis (run.gpx)', (mode) => {
+    const { track, metrics } = fixture(run)
+    const line = buildLineData(track, metrics, mode, indexYs(150))
+    for (const range of [
+      [0, 149],
+      [10, 20],
+      [37, 38],
+      [75, 75],
+      [100, 149],
+    ] as const) {
+      const x = rangeToX(metrics, mode, [...range])
+      expect(x).not.toBeNull()
+      expect(xToRange(line, x![0], x![1])).toEqual(range)
+    }
+  })
+
+  it('distance: km of the edge points', () => {
+    const { metrics } = fixture(run)
+    const x = rangeToX(metrics, 'distance', [10, 20])!
+    expect(x[0]).toBe(metrics.distance[10] / 1000)
+    expect(x[1]).toBe(metrics.distance[20] / 1000)
+  })
+
+  it('xToRange takes the points inside the window, between data items too', () => {
+    const { track, metrics } = fixture(run)
+    const line = buildLineData(track, metrics, 'distance', indexYs(150))
+    const km = (i: number) => metrics.distance[i] / 1000
+    const mid = (i: number) => (km(i) + km(i + 1)) / 2
+    expect(xToRange(line, mid(10), mid(20))).toEqual([11, 20])
+    expect(xToRange(line, -1, 999)).toEqual([0, 149])
+    // Between two neighbouring points: nothing inside.
+    expect(xToRange(line, mid(10), mid(10) + 1e-9)).toBeNull()
+    expect(xToRange({ data: [], dataToPoint: [] }, 0, 1)).toBeNull()
+  })
+
+  it('bike.gpx time axis: a window inside the segment break is null, one across it spans it', () => {
+    const { track, metrics } = fixture(bike)
+    const line = buildLineData(track, metrics, 'time', indexYs(200))
+    const b = line.dataToPoint.indexOf(-1)
+    const lastOfFirst = line.dataToPoint[b - 1]
+    const firstOfSecond = line.dataToPoint[b + 1]
+    const pauseStart = line.data[b - 1][0]
+    const pauseEnd = line.data[b + 1][0]
+    expect(xToRange(line, pauseStart + 1, pauseEnd - 1)).toBeNull()
+    expect(xToRange(line, line.data[b - 3][0], line.data[b + 3][0])).toEqual([
+      lastOfFirst - 2,
+      firstOfSecond + 2,
+    ])
+    // The round trip across the break.
+    const x = rangeToX(metrics, 'time', [lastOfFirst - 2, firstOfSecond + 2])!
+    expect(xToRange(line, x[0], x[1])).toEqual([lastOfFirst - 2, firstOfSecond + 2])
+  })
+
+  it('time axis: edges on untimed points move inward; no timed point gives null', () => {
+    const { metrics } = fixture(run)
+    const elapsed = [...metrics.elapsed]
+    elapsed[10] = null
+    elapsed[11] = null
+    elapsed[20] = null
+    const m = { ...metrics, elapsed }
+    expect(rangeToX(m, 'time', [10, 20])).toEqual([metrics.elapsed[12], metrics.elapsed[19]])
+    expect(rangeToX(m, 'time', [10, 11])).toBeNull()
+    expect(rangeToX(fixture(noEleTime).metrics, 'time', [0, 5])).toBeNull()
   })
 })
 

@@ -6,8 +6,8 @@ beforeEach(() => {
 })
 
 describe('createViewStore', () => {
-  it('starts with no hover', () => {
-    expect(createViewStore().getState()).toEqual({ hover: null })
+  it('starts with no hover and no zoom', () => {
+    expect(createViewStore().getState()).toEqual({ hover: null, zoom: null })
   })
 
   it('stores the value right away and notifies once per frame with the last value', () => {
@@ -69,5 +69,61 @@ describe('createViewStore', () => {
     store.setHover({ index: 1, source: 'map' })
     flushFrame()
     expect(listener).not.toHaveBeenCalled()
+  })
+})
+
+describe('setZoom', () => {
+  it('stores the range right away and notifies once per frame with the last value', () => {
+    const store = createViewStore(100)
+    const seen: unknown[] = []
+    store.subscribe(() => seen.push(store.getState().zoom))
+
+    store.setZoom([10, 20])
+    expect(store.getState().zoom).toEqual([10, 20])
+    store.setZoom([12, 30])
+    expect(pendingFrames()).toBe(1)
+    expect(seen).toEqual([])
+
+    flushFrame()
+    expect(seen).toEqual([[12, 30]])
+  })
+
+  it('the same range again schedules nothing and keeps the stored array', () => {
+    const store = createViewStore(100)
+    store.setZoom([10, 20])
+    flushFrame()
+    const stored = store.getState().zoom
+
+    store.setZoom([10, 20])
+    expect(pendingFrames()).toBe(0)
+    expect(store.getState().zoom).toBe(stored)
+  })
+
+  it('a range covering the whole track is stored as null', () => {
+    const store = createViewStore(100)
+    store.setZoom([10, 20])
+    store.setZoom([0, 99])
+    expect(store.getState().zoom).toBeNull()
+    store.setZoom([0, 98])
+    expect(store.getState().zoom).toEqual([0, 98])
+  })
+
+  it('without a point count no range is normalised', () => {
+    const store = createViewStore()
+    store.setZoom([0, 99])
+    expect(store.getState().zoom).toEqual([0, 99])
+  })
+
+  it('hover and zoom are independent slices', () => {
+    const store = createViewStore(100)
+    store.setHover({ index: 5, source: 'map' })
+    const hover = store.getState().hover
+    store.setZoom([10, 20])
+    expect(store.getState().hover).toBe(hover)
+    const zoom = store.getState().zoom
+    store.setHover({ index: 6, source: 'map' })
+    expect(store.getState().zoom).toBe(zoom)
+    // One frame for both changes.
+    expect(pendingFrames()).toBe(1)
   })
 })

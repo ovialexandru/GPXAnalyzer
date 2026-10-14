@@ -3,11 +3,18 @@ import { render } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 import { useViewStore, ViewStoreProvider, type ViewStore } from '../ui/view/index.ts'
 
-/**
- * `render` inside a `ViewStoreProvider`; `store` is the provided store (kept across `rerender`).
- * `strict` renders the whole tree in StrictMode.
- */
-export function renderWithViewStore(ui: ReactElement, { strict = false } = {}) {
+interface Options {
+  /** Render the whole tree in StrictMode. */
+  strict?: boolean
+  /** Passed to the provider, so a whole-track zoom is stored as null. */
+  pointCount?: number
+}
+
+/** `render` inside a `ViewStoreProvider`; `store` is the provided store (kept across `rerender`). */
+export function renderWithViewStore(
+  ui: ReactElement,
+  { strict = false, pointCount }: Options = {},
+) {
   let store: ViewStore | undefined
   function Capture({ children }: { children: ReactNode }) {
     store = useViewStore()
@@ -16,7 +23,7 @@ export function renderWithViewStore(ui: ReactElement, { strict = false } = {}) {
   const result = render(ui, {
     reactStrictMode: strict,
     wrapper: ({ children }) => (
-      <ViewStoreProvider>
+      <ViewStoreProvider pointCount={pointCount}>
         <Capture>{children}</Capture>
       </ViewStoreProvider>
     ),

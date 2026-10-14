@@ -54,6 +54,15 @@ describe('useViewState', () => {
     expect(screen.getByText('idle')).toBeInTheDocument()
     expect(onRender).toHaveBeenCalledTimes(3)
   })
+
+  it('a hover-only subscriber does not re-render on zoom', () => {
+    const { onRender, store } = setup()
+    store().setZoom([10, 20])
+    flushFrame()
+    store().setZoom(null)
+    flushFrame()
+    expect(onRender).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('ViewStoreProvider', () => {
@@ -68,6 +77,18 @@ describe('ViewStoreProvider', () => {
     expect(store()).not.toBe(first)
     expect(store().getState().hover).toBeNull()
     expect(screen.getByText('idle')).toBe(node)
+  })
+
+  it('pointCount lets the store recognise a whole-track zoom', () => {
+    const onRender = vi.fn<(store: ViewStore) => void>()
+    render(
+      <ViewStoreProvider pointCount={50}>
+        <Hovered onRender={onRender} />
+      </ViewStoreProvider>,
+    )
+    const store = onRender.mock.lastCall![0]
+    store.setZoom([0, 49])
+    expect(store.getState().zoom).toBeNull()
   })
 
   it('the same resetKey keeps the store', () => {

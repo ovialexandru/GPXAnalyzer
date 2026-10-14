@@ -1,6 +1,15 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { getTrackMetrics } from '../../metrics/index.ts'
-import { init, lastOption, liveCharts, resetEChartsMock } from '../../test/echartsMock.ts'
+import type { Track } from '../../model/index.ts'
+import { flushFrame, stubAnimationFrames } from '../../test/animationFrames.ts'
+import {
+  charts,
+  init,
+  lastOption,
+  liveCharts,
+  resetEChartsMock,
+  type FakeChart,
+} from '../../test/echartsMock.ts'
 import bike from '../../test/fixtures/bike.gpx?raw'
 import noEleTime from '../../test/fixtures/no-ele-time.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
@@ -11,8 +20,20 @@ import { ChartsPanel } from './index.ts'
 vi.mock('echarts/core', () => import('../../test/echartsMock.ts'))
 
 function panelFor(text: string) {
-  const track = parseTrack(text)
+  return panelForTrack(parseTrack(text))
+}
+
+function panelForTrack(track: Track) {
   return <ChartsPanel track={track} metrics={getTrackMetrics(track)} />
+}
+
+function resetButton() {
+  return screen.getByRole('button', { name: 'Reset zoom' })
+}
+
+/** The dataZoom types in a chart's option, e.g. ['inside', 'slider']. */
+function zoomTypes(chart: FakeChart) {
+  return lastOption(chart).dataZoom.map((z: { type: string }) => z.type)
 }
 
 function xAxisRadio(name: 'Distance' | 'Time') {
@@ -26,6 +47,7 @@ function xAxes() {
 
 beforeEach(() => {
   resetEChartsMock()
+  stubAnimationFrames()
 })
 
 describe('ChartsPanel', () => {
@@ -87,5 +109,42 @@ describe('ChartsPanel', () => {
     expect(init).toHaveBeenCalledTimes(2)
     expect(liveCharts()).toHaveLength(2)
     expect(within(speed).getByRole('radio', { name: 'Pace' })).toBeChecked()
+  })
+
+  it('Reset zoom: disabled until zoomed; clicking it clears the zoom and disables it again', () => {
+    const { store } = render(panelFor(run))
+    expect(resetButton()).toBeDisabled()
+
+    store.setZoom([20, 60])
+    flushFrame()
+    expect(resetButton()).toBeEnabled()
+
+    fireEvent.click(resetButton())
+    expect(store.getState().zoom).toBeNull()
+    flushFrame()
+    expect(resetButton()).toBeDisabled()
+  })
+
+  it('the slider is under the speed chart when it has data', () => {
+    render(panelFor(run))
+    const [elevation, speed] = charts
+    expect(zoomTypes(elevation)).toEqual(['inside'])
+    expect(zoomTypes(speed)).toEqual(['inside', 'slider'])
+    const height = (chart: FakeChart) => parseFloat(chart.node.style.height)
+    expect(height(speed)).toBeGreaterThan(height(elevation))
+  })
+
+  it('the slider moves to the elevation chart when the speed chart is empty', () => {
+    const track = parseTrack(run)
+    for (const p of track.points) delete p.time
+    render(panelForTrack(track))
+    expect(liveCharts()).toHaveLength(1)
+    expect(zoomTypes(liveCharts()[0])).toEqual(['inside', 'slider'])
+  })
+
+  it('no elevation or time: no charts, Reset shown disabled', () => {
+    render(panelFor(noEleTime))
+    expect(liveCharts()).toHaveLength(0)
+    expect(resetButton()).toBeDisabled()
   })
 })

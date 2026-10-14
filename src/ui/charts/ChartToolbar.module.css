@@ -1,0 +1,35 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.reset {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid #c3cbd8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.reset:not(:disabled):hover {
+  background: #f0f4ff;
+}
+
+.reset:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.reset:disabled {
+  background: #f4f6f9;
+  color: #9aa3b2;
+  cursor: not-allowed;
+}

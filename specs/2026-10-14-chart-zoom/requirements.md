@@ -32,6 +32,8 @@ interface ViewStore {
   /** Coalesced per animation frame, like setHover. A range covering the whole track is stored as null. */
   setZoom(zoom: PointRange | null): void
 }
+/** pointCount lets setZoom recognise the whole track; ViewStoreProvider takes it as a prop. */
+function createViewStore(pointCount?: number): ViewStore
 
 // src/ui/charts/xAxis.ts (added)
 /** Axis values for a point range on this axis; null when no point of the range is on the axis. */

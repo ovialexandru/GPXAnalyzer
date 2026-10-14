@@ -1,4 +1,4 @@
-// Shared view state (hover now; zoom and selection in later phases), one store per loaded track.
+// Shared view state (hover and zoom; selection in a later phase), one store per loaded track.
 
 export type HoverSource = 'map' | 'elevation' | 'speed'
 
@@ -9,8 +9,13 @@ export interface Hover {
   source: HoverSource
 }
 
+/** Inclusive point indices [first, last]. */
+export type PointRange = [first: number, last: number]
+
 export interface ViewState {
   hover: Hover | null
+  /** Points in the charts' visible window; null = whole track. */
+  zoom: PointRange | null
 }
 
 export interface ViewStore {
@@ -18,14 +23,21 @@ export interface ViewStore {
   subscribe(listener: () => void): () => void
   /** Coalesced: at most one notification per animation frame; the last value wins. */
   setHover(hover: Hover | null): void
+  /** Coalesced like `setHover`. A range covering the whole track is stored as null. */
+  setZoom(zoom: PointRange | null): void
 }
 
 function sameHover(a: Hover | null, b: Hover | null): boolean {
   return a === b || (a !== null && b !== null && a.index === b.index && a.source === b.source)
 }
 
-export function createViewStore(): ViewStore {
-  let state: ViewState = { hover: null }
+function sameRange(a: PointRange | null, b: PointRange | null): boolean {
+  return a === b || (a !== null && b !== null && a[0] === b[0] && a[1] === b[1])
+}
+
+/** `pointCount` lets `setZoom` recognise the whole track; without it no range is normalised. */
+export function createViewStore(pointCount?: number): ViewStore {
+  let state: ViewState = { hover: null, zoom: null }
   const listeners = new Set<() => void>()
   let frame: number | null = null
 
@@ -33,6 +45,14 @@ export function createViewStore(): ViewStore {
     frame = null
     for (const listener of [...listeners]) listener()
   }
+
+  const update = (next: Partial<ViewState>) => {
+    state = { ...state, ...next }
+    frame ??= requestAnimationFrame(notify)
+  }
+
+  const isWholeTrack = ([first, last]: PointRange) =>
+    pointCount !== undefined && first <= 0 && last >= pointCount - 1
 
   return {
     getState: () => state,
@@ -44,8 +64,12 @@ export function createViewStore(): ViewStore {
     },
     setHover(hover) {
       if (sameHover(state.hover, hover)) return
-      state = { ...state, hover }
-      frame ??= requestAnimationFrame(notify)
+      update({ hover })
+    },
+    setZoom(zoom) {
+      const normalised = zoom && isWholeTrack(zoom) ? null : zoom
+      if (sameRange(state.zoom, normalised)) return
+      update({ zoom: normalised })
     },
   }
 }

@@ -5,6 +5,7 @@ import { ChartCard } from './ChartCard.tsx'
 import { SegmentedControl } from './SegmentedControl.tsx'
 import { buildSpeedOption, type SpeedMetric } from './speedOption.ts'
 import { useChartHover } from './useChartHover.ts'
+import { useChartZoom } from './useChartZoom.ts'
 import { useECharts } from './useECharts.ts'
 import type { XAxisMode } from './xAxis.ts'
 
@@ -17,16 +18,18 @@ interface SpeedChartProps {
   track: Track
   metrics: TrackMetrics
   mode: XAxisMode
+  /** Show the zoom slider under this chart. */
+  withSlider?: boolean
 }
 
 /** Speed or pace chart with its own switch, or an empty state when the track has no timestamps. */
-export function SpeedChart({ track, metrics, mode }: SpeedChartProps) {
+export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedChartProps) {
   const [metric, setMetric] = useState<SpeedMetric>('speed')
   const hasTime = useMemo(() => getAvailableFields(track).time, [track])
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric) : null),
-    [hasTime, track, metrics, mode, metric],
+    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric, withSlider) : null),
+    [hasTime, track, metrics, mode, metric, withSlider],
   )
 
   useEffect(() => {
@@ -34,6 +37,8 @@ export function SpeedChart({ track, metrics, mode }: SpeedChartProps) {
     chart.setOption(built.option, { notMerge: true })
   }, [chart, built])
 
+  // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
+  useChartZoom(chart, built?.line ?? null, metrics, mode)
   useChartHover(chart, 'speed', built?.line ?? null, metrics, mode)
 
   return (
@@ -53,6 +58,7 @@ export function SpeedChart({ track, metrics, mode }: SpeedChartProps) {
       emptyMessage={
         hasTime ? undefined : "This track has no timestamps, so speed and pace can't be shown."
       }
+      withSlider={withSlider}
       containerRef={containerRef}
     />
   )

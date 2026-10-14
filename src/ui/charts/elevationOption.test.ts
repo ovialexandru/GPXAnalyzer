@@ -2,6 +2,7 @@ import { getTrackMetrics } from '../../metrics/index.ts'
 import bike from '../../test/fixtures/bike.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
+import { SLIDER_SPACE } from './chartTheme.ts'
 import { buildElevationOption } from './elevationOption.ts'
 import type { TooltipParams } from './echarts.ts'
 import type { XAxisMode } from './xAxis.ts'
@@ -70,5 +71,18 @@ describe('buildElevationOption', () => {
     expect(data).toHaveLength(201)
     expect(data[track.segmentStarts[1]][1]).toBeNull()
     expect(tooltip(opt, [644, 72])).toBe('10:44 · 72 m')
+  })
+
+  it('zoomable: inside zoom only, or with the slider and room for it under the plot', () => {
+    const track = parseTrack(run)
+    const metrics = getTrackMetrics(track)
+    const plain = buildElevationOption(track, metrics, 'distance').option as any
+    expect(plain.dataZoom.map((z: any) => z.type)).toEqual(['inside'])
+    expect(plain.grid.bottom).toBe(28)
+
+    const withSlider = buildElevationOption(track, metrics, 'distance', true).option as any
+    expect(withSlider.dataZoom.map((z: any) => z.type)).toEqual(['inside', 'slider'])
+    expect(withSlider.grid.bottom).toBe(28 + SLIDER_SPACE)
+    expect(withSlider.grid.left).toBe(plain.grid.left)
   })
 })

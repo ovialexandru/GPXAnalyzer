@@ -81,6 +81,14 @@ describe('buildSpeedOption', () => {
     expect(opt.series[0]).toMatchObject({ sampling: 'lttb', showSymbol: false })
   })
 
+  it.each(['speed', 'pace'] as const)('%s: zoom slider only when asked', (metric) => {
+    const { track, metrics } = fixture(run)
+    expect(build(track, metrics, 'time', metric).dataZoom).toHaveLength(1)
+    const opt = buildSpeedOption(track, metrics, 'time', metric, true).option as any
+    expect(opt.dataZoom.map((z: any) => z.type)).toEqual(['inside', 'slider'])
+    expect(opt.dataZoom[0].minValueSpan).toBe(30)
+  })
+
   it('time mode: break between the bike.gpx segments', () => {
     const { track, metrics } = fixture(bike)
     const opt = build(track, metrics, 'time', 'speed')

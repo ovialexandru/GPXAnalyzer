@@ -6,7 +6,7 @@ Goal: zoom into a section of the charts (see `specs/roadmap.md`, Phase 11). API 
 1. Work on branch `2026-10-14-chart-zoom`; rebase onto `main` after Phase 10 is merged.
 
 ## 1. Store and range helpers
-1. Add `PointRange`, `zoom` and `setZoom` to the view store (same coalescing as `setHover`); a whole-track range is normalised to `null`.
+1. Add `PointRange`, `zoom` and `setZoom` to the view store (same coalescing as `setHover`); a whole-track range is normalised to `null`. The store learns the track size from `createViewStore(pointCount)`, which `ViewStoreProvider` gets as a `pointCount` prop from `App`.
 2. Add `rangeToX` and `xToRange` to `src/ui/charts/xAxis.ts`.
 3. Tests:
    - `viewStore.test.ts`: `setZoom` coalesces; `[0, n - 1]` is stored as `null`; `hover` and `zoom` notify independently (a hover-only subscriber doesn't re-render on zoom).
@@ -20,7 +20,7 @@ Goal: zoom into a section of the charts (see `specs/roadmap.md`, Phase 11). API 
 
 ## 3. Linking
 1. Create `src/ui/charts/useChartZoom.ts(chart, line, metrics, mode)`:
-   - On `datazoom`, read the window from `chart.getOption()` and call `setZoom(xToRange(…))`.
+   - On `datazoom`, read the window from the event (percent of the axis extent `[0, max]`, which `buildXAxis` fixes) and call `setZoom(xToRange(…))`. (Not `chart.getOption()`: it deep-copies the whole option, series data included, on every wheel step.) A window over the whole axis gives `null`; one with no point inside (within a pause) takes the points nearest its edges.
    - When the store's `zoom` differs from the chart's window, `dispatchAction({ type: 'dataZoom', startValue, endValue })`. `null` dispatches `start: 0, end: 100`.
    - Ignore `datazoom` events caused by its own dispatch.
    - Re-apply the window after each `setOption({ notMerge: true })`: x-axis toggle, pace/speed switch.

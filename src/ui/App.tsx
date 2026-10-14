@@ -40,7 +40,7 @@ function App() {
       )}
       {loaded && metrics && (
         // A fresh view store per track; the map and charts stay mounted.
-        <ViewStoreProvider resetKey={loaded}>
+        <ViewStoreProvider resetKey={loaded} pointCount={loaded.track.points.length}>
           <TrackSummary loaded={loaded} totals={metrics.totals} />
           <TrackMap track={loaded.track} />
           <ChartsPanel track={loaded.track} metrics={metrics} />

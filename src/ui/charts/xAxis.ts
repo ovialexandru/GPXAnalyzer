@@ -2,6 +2,7 @@
 import { getSegmentRanges, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { formatDistance, formatDuration } from '../format.ts'
+import type { PointRange } from '../view/index.ts'
 import { AXIS_LABEL, SPLIT_LINE } from './chartTheme.ts'
 import type { XAXisComponentOption } from './echarts.ts'
 
@@ -53,13 +54,7 @@ export function buildLineData(
 export function pointAtX(line: LineData, x: number): number | null {
   const { data, dataToPoint } = line
   // First data index whose x is >= the target.
-  let lo = 0
-  let hi = data.length
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1
-    if (data[mid][0] < x) lo = mid + 1
-    else hi = mid
-  }
+  const lo = countBefore(data, x, false)
   let after = lo
   while (after < data.length && dataToPoint[after] === -1) after++
   let before = lo - 1
@@ -79,6 +74,47 @@ export function xOfPoint(metrics: TrackMetrics, mode: XAxisMode, index: number):
   return metrics.elapsed[index] ?? null
 }
 
+/** Axis values for a point range; edges on untimed points move inward. Null when no point of the range is on the axis. */
+export function rangeToX(
+  metrics: TrackMetrics,
+  mode: XAxisMode,
+  [first, last]: PointRange,
+): [number, number] | null {
+  let x0: number | null = null
+  for (let i = first; i <= last && x0 === null; i++) x0 = xOfPoint(metrics, mode, i)
+  let x1: number | null = null
+  for (let i = last; i >= first && x1 === null; i--) x1 = xOfPoint(metrics, mode, i)
+  return x0 === null || x1 === null ? null : [x0, x1]
+}
+
+/** Point range covered by axis values [x0, x1]: first point with x >= x0, last with x <= x1. Null when none. */
+export function xToRange(line: LineData, x0: number, x1: number): PointRange | null {
+  const { data, dataToPoint } = line
+  let lo = countBefore(data, x0, false)
+  while (lo < data.length && dataToPoint[lo] === -1) lo++
+  let hi = countBefore(data, x1, true) - 1
+  while (hi >= 0 && dataToPoint[hi] === -1) hi--
+  if (lo >= data.length || hi < 0 || dataToPoint[lo] > dataToPoint[hi]) return null
+  return [dataToPoint[lo], dataToPoint[hi]]
+}
+
+/** Number of leading data items with x below the target (or at it, when `inclusive`); binary search. */
+function countBefore(data: LineData['data'], x: number, inclusive: boolean): number {
+  let lo = 0
+  let hi = data.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (data[mid][0] < x || (inclusive && data[mid][0] === x)) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+/** The axis range: 0 to the track's total distance (km) or duration (s). */
+export function axisExtent(metrics: TrackMetrics, mode: XAxisMode): [number, number] {
+  return [0, mode === 'distance' ? metrics.totals.distance / 1000 : (metrics.totals.duration ?? 0)]
+}
+
 const TIME_INTERVALS = [1, 2, 5, 10, 15, 20, 30, 60, 120, 180, 360].map((min) => min * 60)
 const MAX_TIME_TICKS = 6
 
@@ -94,19 +130,14 @@ function kmLabel(km: number): string {
 
 /** Pure: x-axis option for the mode (km labels, or elapsed-time labels at a nice interval). */
 export function buildXAxis(metrics: TrackMetrics, mode: XAxisMode): XAXisComponentOption {
-  const common = { type: 'value', min: 0, splitLine: SPLIT_LINE } as const
+  const [min, max] = axisExtent(metrics, mode)
+  const common = { type: 'value', min, max, splitLine: SPLIT_LINE } as const
   if (mode === 'distance') {
-    return {
-      ...common,
-      max: metrics.totals.distance / 1000,
-      axisLabel: { ...AXIS_LABEL, formatter: kmLabel },
-    }
+    return { ...common, axisLabel: { ...AXIS_LABEL, formatter: kmLabel } }
   }
-  const duration = metrics.totals.duration ?? 0
   return {
     ...common,
-    max: duration,
-    interval: niceTimeInterval(duration),
+    interval: niceTimeInterval(max),
     axisLabel: { ...AXIS_LABEL, formatter: formatDuration },
   }
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import styles from './ChartCard.module.css'
-import { CHART_HEIGHT } from './chartTheme.ts'
+import { CHART_HEIGHT, SLIDER_SPACE } from './chartTheme.ts'
 
 interface ChartCardProps {
   /** Accessible name of the region, e.g. "Elevation chart". */
@@ -10,6 +10,8 @@ interface ChartCardProps {
   controls?: ReactNode
   /** Shown instead of the chart when set; the chart container is then not rendered. */
   emptyMessage?: string
+  /** The chart carries the zoom slider: its canvas grows to fit it. */
+  withSlider?: boolean
   containerRef: (node: HTMLDivElement | null) => void
 }
 
@@ -19,6 +21,7 @@ export function ChartCard({
   heading,
   controls,
   emptyMessage,
+  withSlider = false,
   containerRef,
 }: ChartCardProps) {
   return (
@@ -32,7 +35,11 @@ export function ChartCard({
           {emptyMessage}
         </p>
       ) : (
-        <div ref={containerRef} className={styles.chart} style={{ height: CHART_HEIGHT }} />
+        <div
+          ref={containerRef}
+          className={styles.chart}
+          style={{ height: CHART_HEIGHT + (withSlider ? SLIDER_SPACE : 0) }}
+        />
       )}
     </section>
   )
