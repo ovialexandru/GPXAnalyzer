@@ -2,6 +2,7 @@ import { getTrackMetrics } from '../../metrics/index.ts'
 import bike from '../../test/fixtures/bike.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
+import { buildBrush, HIDDEN_TOOLBOX } from './brushOption.ts'
 import { SLIDER_SPACE } from './chartTheme.ts'
 import { buildElevationOption } from './elevationOption.ts'
 import type { TooltipParams } from './echarts.ts'
@@ -84,5 +85,12 @@ describe('buildElevationOption', () => {
     expect(withSlider.dataZoom.map((z: any) => z.type)).toEqual(['inside', 'slider'])
     expect(withSlider.grid.bottom).toBe(28 + SLIDER_SPACE)
     expect(withSlider.grid.left).toBe(plain.grid.left)
+  })
+
+  it('brushable along the x axis, with the toolbox hidden', () => {
+    expect(option(run).option.brush).toEqual(buildBrush())
+    expect(option(bike, 'time').option.brush).toEqual(buildBrush())
+    expect(option(run).option.toolbox).toEqual(HIDDEN_TOOLBOX)
+    expect(HIDDEN_TOOLBOX).toEqual({ show: false })
   })
 })

@@ -30,16 +30,23 @@ function endpointMarker(point: TrackPoint, fillColor: string, label: string): L.
   )
 }
 
+export interface TrackLayers {
+  group: L.LayerGroup
+  /** The segment lines in `group`, without the markers. */
+  lines: L.Polyline[]
+}
+
 /** One polyline per segment, then start/end markers so they are drawn above the line. */
-export function createTrackLayers(track: Track): L.LayerGroup {
-  const layers: L.Layer[] = getSegmentLines(track).map((line) => L.polyline(line, LINE_STYLE))
+export function createTrackLayers(track: Track): TrackLayers {
+  const lines = getSegmentLines(track).map((line) => L.polyline(line, LINE_STYLE))
+  const layers: L.Layer[] = [...lines]
   const first = track.points[0]
   const last = track.points.at(-1)
   if (first && last) {
     layers.push(endpointMarker(first, START_COLOR, 'Start'))
     layers.push(endpointMarker(last, END_COLOR, 'Finish'))
   }
-  return L.layerGroup(layers)
+  return { group: L.layerGroup(layers), lines }
 }
 
 /** Fit the map to the bounds; does nothing when there are none. */

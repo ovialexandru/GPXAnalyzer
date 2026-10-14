@@ -31,6 +31,14 @@ function resetButton() {
   return screen.getByRole('button', { name: 'Reset zoom' })
 }
 
+function zoomToSelectionButton() {
+  return screen.getByRole('button', { name: 'Zoom to selection' })
+}
+
+function clearButton() {
+  return screen.getByRole('button', { name: 'Clear selection' })
+}
+
 /** The dataZoom types in a chart's option, e.g. ['inside', 'slider']. */
 function zoomTypes(chart: FakeChart) {
   return lastOption(chart).dataZoom.map((z: { type: string }) => z.type)
@@ -146,5 +154,92 @@ describe('ChartsPanel', () => {
     render(panelFor(noEleTime))
     expect(liveCharts()).toHaveLength(0)
     expect(resetButton()).toBeDisabled()
+  })
+
+  it('no elevation or time: the selection buttons are shown disabled', () => {
+    render(panelFor(noEleTime))
+    expect(zoomToSelectionButton()).toBeDisabled()
+    expect(clearButton()).toBeDisabled()
+  })
+})
+
+describe('ChartsPanel selection actions', () => {
+  it('Zoom to selection and Clear selection are disabled until something is selected', () => {
+    const { store } = render(panelFor(run))
+    expect(zoomToSelectionButton()).toBeDisabled()
+    expect(clearButton()).toBeDisabled()
+
+    store.setSelection([20, 60])
+    flushFrame()
+    expect(zoomToSelectionButton()).toBeEnabled()
+    expect(clearButton()).toBeEnabled()
+  })
+
+  it('Zoom to selection sets the zoom to the selection and keeps the selection', () => {
+    const { store } = render(panelFor(run), { pointCount: 150 })
+    store.setSelection([20, 60])
+    flushFrame()
+    fireEvent.click(zoomToSelectionButton())
+    expect(store.getState().zoom).toEqual([20, 60])
+    expect(store.getState().selection).toEqual([20, 60])
+    flushFrame()
+    expect(resetButton()).toBeEnabled()
+  })
+
+  it('Clear selection clears it and disables both buttons; the zoom stays', () => {
+    const { store } = render(panelFor(run))
+    store.setZoom([10, 90])
+    store.setSelection([20, 60])
+    flushFrame()
+    fireEvent.click(clearButton())
+    expect(store.getState().selection).toBeNull()
+    expect(store.getState().zoom).toEqual([10, 90])
+    flushFrame()
+    expect(zoomToSelectionButton()).toBeDisabled()
+    expect(clearButton()).toBeDisabled()
+  })
+
+  it('Esc clears the selection, also with focus on the x-axis toggle', () => {
+    const { store } = render(panelFor(run))
+    store.setSelection([20, 60])
+    flushFrame()
+    fireEvent.keyDown(xAxisRadio('Time'), { key: 'Escape' })
+    expect(store.getState().selection).toBeNull()
+
+    store.setSelection([20, 60])
+    flushFrame()
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(store.getState().selection).toBeNull()
+  })
+
+  it('Esc in a text field, or another key, does nothing', () => {
+    const { store } = render(
+      <>
+        {panelFor(run)}
+        <input type="text" aria-label="Note" />
+        <textarea aria-label="Notes" />
+      </>,
+    )
+    store.setSelection([20, 60])
+    flushFrame()
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Note' }), { key: 'Escape' })
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Notes' }), { key: 'Escape' })
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    expect(store.getState().selection).toEqual([20, 60])
+  })
+
+  it('Esc is not listened for without a selection', () => {
+    const add = vi.spyOn(window, 'addEventListener')
+    const { store } = render(panelFor(run))
+    expect(add).not.toHaveBeenCalledWith('keydown', expect.any(Function))
+    store.setSelection([20, 60])
+    flushFrame()
+    expect(add).toHaveBeenCalledWith('keydown', expect.any(Function))
+    const remove = vi.spyOn(window, 'removeEventListener')
+    store.setSelection(null)
+    flushFrame()
+    expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function))
+    add.mockRestore()
+    remove.mockRestore()
   })
 })

@@ -1,4 +1,4 @@
-// Shared view state (hover and zoom; selection in a later phase), one store per loaded track.
+// Shared view state (hover, zoom and selection), one store per loaded track.
 
 export type HoverSource = 'map' | 'elevation' | 'speed'
 
@@ -16,6 +16,8 @@ export interface ViewState {
   hover: Hover | null
   /** Points in the charts' visible window; null = whole track. */
   zoom: PointRange | null
+  /** Selected points, at least 2; null = nothing selected. */
+  selection: PointRange | null
 }
 
 export interface ViewStore {
@@ -25,6 +27,8 @@ export interface ViewStore {
   setHover(hover: Hover | null): void
   /** Coalesced like `setHover`. A range covering the whole track is stored as null. */
   setZoom(zoom: PointRange | null): void
+  /** Coalesced like `setHover`. A range of fewer than 2 points is stored as null. */
+  setSelection(selection: PointRange | null): void
 }
 
 function sameHover(a: Hover | null, b: Hover | null): boolean {
@@ -37,7 +41,7 @@ function sameRange(a: PointRange | null, b: PointRange | null): boolean {
 
 /** `pointCount` lets `setZoom` recognise the whole track; without it no range is normalised. */
 export function createViewStore(pointCount?: number): ViewStore {
-  let state: ViewState = { hover: null, zoom: null }
+  let state: ViewState = { hover: null, zoom: null, selection: null }
   const listeners = new Set<() => void>()
   let frame: number | null = null
 
@@ -70,6 +74,11 @@ export function createViewStore(pointCount?: number): ViewStore {
       const normalised = zoom && isWholeTrack(zoom) ? null : zoom
       if (sameRange(state.zoom, normalised)) return
       update({ zoom: normalised })
+    },
+    setSelection(selection) {
+      const normalised = selection && selection[1] > selection[0] ? selection : null
+      if (sameRange(state.selection, normalised)) return
+      update({ selection: normalised })
     },
   }
 }

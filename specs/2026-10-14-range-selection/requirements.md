@@ -38,9 +38,18 @@ interface ViewStore {
 /** Brush component: lineX on x-axis 0, single mode, no toolbox shown. */
 function buildBrush(): ChartOption['brush']
 
+/** ECharts adds a toolbox to any option with a brush; this keeps it hidden. */
+const HIDDEN_TOOLBOX: ChartOption['toolbox']
+
 // src/ui/map/selectionLayers.ts
-/** One polyline per segment part inside the range, on an SVG renderer, with class `track-selection`. */
-function createSelectionLayers(track: Track, range: PointRange): L.LayerGroup
+/**
+ * One polyline per segment part inside the range (parts of a single point are left out), on an SVG
+ * renderer (one per map, passed in by the overlay), with class `track-selection`.
+ */
+function createSelectionLayers(track: Track, range: PointRange, renderer?: L.Renderer): L.LayerGroup
+
+// src/ui/map/trackLayers.ts (changed): the lines are returned too, so the overlay can dim them.
+function createTrackLayers(track: Track): { group: L.LayerGroup; lines: L.Polyline[] }
 ```
 `rangeToX` / `xToRange` (Phase 11) convert between the brush's axis values and point ranges.
 
@@ -58,6 +67,7 @@ function createSelectionLayers(track: Track, range: PointRange): L.LayerGroup
 | Time axis: brush spanning the segment pause | Selects the points on both sides; the map highlight shows one line per segment |
 | Distance axis on an untimed track (`no-ele-time.gpx`) | Both charts are empty, so there's nothing to brush. The selection stays `null` |
 | Hover while a selection exists | Works as in Phase 10 |
+| Two-finger pinch on a chart (touch) | Zooms as in Phase 11. The brush is off for the gesture, and the selection from before the touch is put back |
 | New track loaded | Fresh store: `selection` is `null` |
 
 ## UI
@@ -78,14 +88,17 @@ function createSelectionLayers(track: Track, range: PointRange): L.LayerGroup
 | Clearing | Button + Esc; a click without drag also clears | Discoverable, keyboard-accessible, and matches the common chart-brush habit |
 | Brush mode | `lineX`, single | Selecting is about a stretch of the track, not a y-range |
 | Files | `brushOption.ts`, `useChartBrush.ts` in `src/ui/charts/`; `selectionLayers.ts`, `useSelectionOverlay.ts` in `src/ui/map/` | Small focused modules; components stay under ~200 lines |
+| Hidden toolbox | `ToolboxComponent` registered, `toolbox: { show: false }` | ECharts' brush preprocessor always adds a toolbox; without the component, dev builds log an error. Costs ~7 kB gzip |
+| Pinch with an active brush | A second finger switches the brush off for the gesture; the earlier selection is restored after it | ECharts' brush holds the `globalPan` lock, which otherwise blocks the inside zoom's pinch from Phase 11 |
 
 ## Context
 - Phase 10: the view store with `hover`, per-frame coalescing, the `source` convention, and the ECharts and Leaflet mocks extended for events and markers.
 - Phase 11: `PointRange`, `zoom`, `rangeToX` / `xToRange`, `ChartToolbar` with "Reset zoom", `DataZoomComponent`. Drag on the plot area is unbound.
 - `src/ui/map/trackLayers.ts`: base polylines (`#1d4ed8`, weight 4, non-interactive) and start/finish circle markers in one layer group, on the map's canvas renderer (`preferCanvas: true`).
-- `src/ui/charts/echarts.ts` must register `BrushComponent` (plus `ToolboxComponent` only if `takeGlobalCursor` needs it, kept hidden).
+- `src/ui/charts/echarts.ts` must register `BrushComponent`, plus a hidden `ToolboxComponent`. `takeGlobalCursor` doesn't need it, but the brush always adds a toolbox to the option.
 
 ## Known limitations
 - On phones, a one-finger drag on a chart brushes instead of scrolling the page. Phase 15 handles touch gestures.
 - An existing brush can't be moved or resized; you draw a new one.
+- During a pinch, the first finger may briefly draw a band before the second finger lands. It is undone when the gesture ends.
 - Two charts mean two brush bands; brushing on either one selects.

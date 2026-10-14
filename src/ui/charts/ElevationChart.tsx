@@ -3,6 +3,7 @@ import { getAvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { buildElevationOption } from './elevationOption.ts'
+import { useChartBrush } from './useChartBrush.ts'
 import { useChartHover } from './useChartHover.ts'
 import { useChartZoom } from './useChartZoom.ts'
 import { useECharts } from './useECharts.ts'
@@ -33,6 +34,7 @@ export function ElevationChart({ track, metrics, mode, withSlider = false }: Ele
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
   useChartZoom(chart, built?.line ?? null, metrics, mode)
+  useChartBrush(chart, built?.line ?? null, metrics, mode)
   useChartHover(chart, 'elevation', built?.line ?? null, metrics, mode)
 
   return (

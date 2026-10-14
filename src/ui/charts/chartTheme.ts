@@ -15,6 +15,8 @@ export const COLORS = {
   sliderBorder: '#c3cbd8',
   sliderFill: 'rgba(29, 78, 216, 0.12)',
   sliderHandle: '#1d4ed8',
+  brushFill: 'rgba(245, 158, 11, 0.2)',
+  brushBorder: 'rgba(217, 119, 6, 0.6)',
 }
 
 export const FONT_SIZE = 12

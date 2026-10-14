@@ -1,6 +1,7 @@
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { AXIS_LABEL, FONT_SIZE, GRID, SLIDER_GRID, SPLIT_LINE } from './chartTheme.ts'
+import { buildBrush, HIDDEN_TOOLBOX } from './brushOption.ts'
 import type { ChartOption, TooltipParams } from './echarts.ts'
 import { buildLineData, buildXAxis, formatX, type LineData, type XAxisMode } from './xAxis.ts'
 import { buildDataZoom } from './zoomOption.ts'
@@ -38,8 +39,8 @@ export interface LineChart {
 }
 
 /**
- * Pure: a single-series line chart over the chosen x-axis, zoomable, with the zoom slider under it
- * when `withSlider`. Data index follows `line`.
+ * Pure: a single-series line chart over the chosen x-axis, zoomable and brushable, with the zoom
+ * slider under it when `withSlider`. Data index follows `line`.
  */
 export function buildLineOption(
   track: Track,
@@ -69,6 +70,8 @@ function lineOption(
     },
     xAxis: buildXAxis(metrics, mode),
     dataZoom: buildDataZoom(mode, withSlider),
+    brush: buildBrush(),
+    toolbox: HIDDEN_TOOLBOX,
     yAxis: {
       type: 'value',
       ...spec.yRange,

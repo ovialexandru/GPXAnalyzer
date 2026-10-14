@@ -28,6 +28,8 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] "Clear selection" and Esc remove the highlight and disable the selection buttons.
 - [ ] Brushing works on both charts; a time-axis brush across `bike.gpx`'s pause gives 2 highlight paths.
 - [ ] 375 × 667 with touch: a one-finger drag selects; no horizontal page scroll; buttons at least 44 × 44 px.
+- [ ] 375 × 667 with touch: a pinch zooms and leaves the selection unchanged.
+- [ ] No ECharts errors or warnings on the console.
 
 ## Manual – desktop and real phone (`npm run dev`)
 - [ ] Desktop, every file in `GpxFiles/`: brushing either chart shows the same band on both and highlights exactly that stretch on the map. The rest of the track is visibly dimmed, and start/finish stay clear.
@@ -40,7 +42,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 ## Design
 - [ ] The selection is stored as a point-index range only; brush coordinates never enter the store.
 - [ ] Selection linking goes through the view store, like hover and zoom.
-- [ ] Only `BrushComponent` (and, if needed, a hidden `ToolboxComponent`) was added to the ECharts registrations.
+- [ ] Only `BrushComponent` and a hidden `ToolboxComponent` (needed: the brush always adds a toolbox) were added to the ECharts registrations.
 - [ ] No new dependencies; no module over ~200 lines.
 
 ## Merge gate

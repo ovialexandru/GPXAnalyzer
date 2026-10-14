@@ -72,9 +72,9 @@ Goal: zoom into a section.
 
 ### Phase 12 – Range selection
 Goal: select a segment.
-- [ ] Brush selection on chart
-- [ ] Selected segment highlighted on map
-- [ ] Clear selection
+- [x] Brush selection on chart
+- [x] Selected segment highlighted on map
+- [x] Clear selection
 
 ### Phase 13 – Selection stats
 Goal: stats for the selection (or whole track if none), reusing the Phase 9 stat functions.

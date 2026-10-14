@@ -328,6 +328,64 @@ describe('App', () => {
     })
   })
 
+  describe('range selection', () => {
+    beforeEach(() => {
+      resetEChartsMock()
+      resetLeafletMock()
+      stubAnimationFrames()
+    })
+
+    function clearButton() {
+      return screen.getByRole('button', { name: 'Clear selection' })
+    }
+
+    /** Polylines drawn as the map's selection highlight. */
+    function highlights() {
+      return vi
+        .mocked(L.polyline)
+        .mock.results.filter((r) => r.value.options.className === 'track-selection')
+    }
+
+    function brush(x0: number, x1: number) {
+      liveCharts()[0].emit('brush', { areas: [{ coordRange: [x0, x1] }] })
+      flushFrame()
+    }
+
+    it('brushing a chart highlights the stretch on the map and enables Clear', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      expect(clearButton()).toBeDisabled()
+
+      brush(0.3, 0.6)
+      expect(clearButton()).toBeEnabled()
+      expect(highlights()).toHaveLength(1)
+      expect(liveCharts()[1].dispatchAction).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'brush', areas: [expect.anything()] }),
+        { silent: true },
+      )
+
+      fireEvent.click(clearButton())
+      flushFrame()
+      expect(clearButton()).toBeDisabled()
+    })
+
+    it('a new file clears the selection; a bad file keeps it', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      brush(0.3, 0.6)
+
+      app.pick(gpxFile('<gpx', 'bad.gpx'))
+      await screen.findByRole('alert')
+      expect(clearButton()).toBeEnabled()
+
+      app.pick(gpxFile(run, 'second.gpx'))
+      await screen.findByText('second.gpx')
+      expect(clearButton()).toBeDisabled()
+    })
+  })
+
   it('prevents the browser from opening files dropped outside the drop zone', () => {
     renderApp()
     const drop = new Event('drop', { cancelable: true })

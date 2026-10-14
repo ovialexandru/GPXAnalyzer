@@ -8,15 +8,21 @@ import { createTrackLayers, fitTrack } from './trackLayers.ts'
 import styles from './TrackMap.module.css'
 import { useLeafletMap } from './useLeafletMap.ts'
 import { useMapHover } from './useMapHover.ts'
+import { useSelectionOverlay } from './useSelectionOverlay.ts'
 
 interface TrackMapProps {
   track: Track
 }
 
-/** OSM map showing the track's segments, start/end markers and the shared hover, fitted to the track. */
+/**
+ * OSM map showing the track's segments, start/end markers, the shared hover and selection, fitted
+ * to the track.
+ */
 export function TrackMap({ track }: TrackMapProps) {
   // Latest track bounds, read by the "Fit to track" control.
   const boundsRef = useRef<TrackBounds | null>(null)
+  // The current track's lines, dimmed while a selection is shown.
+  const linesRef = useRef<L.Polyline[]>([])
   const fit = useCallback((map: L.Map) => fitTrack(map, boundsRef.current), [])
   const { containerRef, map } = useLeafletMap(fit)
 
@@ -24,13 +30,17 @@ export function TrackMap({ track }: TrackMapProps) {
   useEffect(() => {
     if (!map) return
     boundsRef.current = getTrackBounds(track)
-    const layers = createTrackLayers(track).addTo(map)
+    const { group, lines } = createTrackLayers(track)
+    group.addTo(map)
+    linesRef.current = lines
     fitTrack(map, boundsRef.current)
     return () => {
-      layers.remove()
+      group.remove()
     }
   }, [map, track])
 
+  // After the effect above, so it sees the new track's lines.
+  useSelectionOverlay(map, track, linesRef)
   useMapHover(map, track)
   useHoverMarker(map, track)
 

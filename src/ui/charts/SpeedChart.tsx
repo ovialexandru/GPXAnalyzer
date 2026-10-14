@@ -4,6 +4,7 @@ import type { Track } from '../../model/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { SegmentedControl } from './SegmentedControl.tsx'
 import { buildSpeedOption, type SpeedMetric } from './speedOption.ts'
+import { useChartBrush } from './useChartBrush.ts'
 import { useChartHover } from './useChartHover.ts'
 import { useChartZoom } from './useChartZoom.ts'
 import { useECharts } from './useECharts.ts'
@@ -39,6 +40,7 @@ export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedCh
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
   useChartZoom(chart, built?.line ?? null, metrics, mode)
+  useChartBrush(chart, built?.line ?? null, metrics, mode)
   useChartHover(chart, 'speed', built?.line ?? null, metrics, mode)
 
   return (

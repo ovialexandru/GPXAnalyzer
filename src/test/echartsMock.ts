@@ -17,6 +17,7 @@ export interface FakeChart {
   /** Fake layout: x axis value * 100 px. */
   convertToPixel: ReturnType<typeof vi.fn>
   getHeight: () => number
+  getDom: () => HTMLElement
   /** Call the handlers registered with `on` for an event, like ECharts would. */
   emit: (event: string, params?: unknown) => void
   /** Handlers currently registered, by event name. */
@@ -51,6 +52,7 @@ export const init = vi.fn((node: HTMLElement): FakeChart => {
     dispatchAction: vi.fn(),
     convertToPixel: vi.fn((_finder: unknown, x: number) => x * PX_PER_X),
     getHeight: () => FAKE_CHART_HEIGHT,
+    getDom: () => node,
     emit: (event, params) => handlers.get(event)?.forEach((h) => h(params)),
     handlers,
   }

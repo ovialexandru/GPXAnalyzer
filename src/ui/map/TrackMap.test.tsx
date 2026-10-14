@@ -312,3 +312,100 @@ describe('TrackMap hover', () => {
     expect(createdMap().handlers.get('mousemove')?.size).toBe(1)
   })
 })
+
+describe('TrackMap selection', () => {
+  /** Polylines drawn with the selection style. */
+  function selectionLines() {
+    return vi
+      .mocked(L.polyline)
+      .mock.results.map((r) => r.value)
+      .filter((l) => l.options.className === 'track-selection')
+  }
+
+  /** The track's own lines, from the first layer group. */
+  function baseLines() {
+    return layerGroup(0).layers.filter((l: { setStyle?: unknown }) => l.setStyle)
+  }
+
+  /** Layer groups holding selection lines, in creation order. */
+  function overlays() {
+    return vi
+      .mocked(L.layerGroup)
+      .mock.results.map((r) => r.value)
+      .filter((g) =>
+        g.layers.some(
+          (l: { options?: { className?: string } }) => l.options?.className === 'track-selection',
+        ),
+      )
+  }
+
+  it('a store selection adds the overlay and dims the base track; clearing restores it', () => {
+    const t = track(bike)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+    vi.mocked(map.fitBounds).mockClear()
+    expect(selectionLines()).toHaveLength(0)
+
+    store.setSelection([90, 110])
+    flushFrame()
+    expect(selectionLines()).toHaveLength(2)
+    const [overlay] = overlays()
+    expect(overlay.addTo).toHaveBeenCalledWith(map)
+    expect(baseLines()).toHaveLength(2)
+    for (const line of baseLines()) expect(line.options.opacity).toBe(0.35)
+    // Markers keep their look.
+    for (const marker of vi.mocked(L.circleMarker).mock.results) {
+      expect(marker.value.options.fillOpacity).toBe(1)
+    }
+
+    store.setSelection(null)
+    flushFrame()
+    expect(overlay.remove).toHaveBeenCalledTimes(1)
+    for (const line of baseLines()) expect(line.options.opacity).toBe(1)
+    expect(map.fitBounds).not.toHaveBeenCalled()
+  })
+
+  it('a new range swaps the overlay on the same SVG renderer; the base stays dimmed', () => {
+    const { store } = render(<TrackMap track={track(run)} />)
+    store.setSelection([10, 20])
+    flushFrame()
+    store.setSelection([10, 40])
+    flushFrame()
+    const [first, second] = overlays()
+    expect(first.remove).toHaveBeenCalledTimes(1)
+    expect(second.remove).not.toHaveBeenCalled()
+    expect(L.svg).toHaveBeenCalledTimes(1)
+    const [a, b] = selectionLines()
+    expect(a.options.renderer).toBe(b.options.renderer)
+    expect(a.latlngs).toHaveLength(11)
+    expect(b.latlngs).toHaveLength(31)
+    expect(baseLines()[0].setStyle).toHaveBeenCalledTimes(1)
+  })
+
+  it('the map view is never changed by a selection', () => {
+    const { store } = render(<TrackMap track={track(run)} />)
+    const map = createdMap()
+    vi.mocked(map.fitBounds).mockClear()
+    store.setSelection([10, 100])
+    flushFrame()
+    store.setSelection([20, 30])
+    flushFrame()
+    expect(map.fitBounds).not.toHaveBeenCalled()
+  })
+
+  it('a new track (same store) moves the overlay and the dimming to the new lines', () => {
+    const { store, rerender } = render(<TrackMap track={track(run)} />)
+    store.setSelection([10, 20])
+    flushFrame()
+    const oldLines = baseLines()
+    rerender(<TrackMap track={track(bike)} />)
+    // The app gives each track a fresh store; here the same selection is redrawn.
+    const [oldOverlay, newOverlay] = overlays()
+    expect(oldOverlay.remove).toHaveBeenCalledTimes(1)
+    expect(newOverlay.addTo).toHaveBeenCalledWith(createdMap())
+    for (const line of oldLines) expect(line.options.opacity).toBe(1)
+    const newLines = layerGroup(2).layers.filter((l: { setStyle?: unknown }) => l.setStyle)
+    expect(newLines).toHaveLength(2)
+    for (const line of newLines) expect(line.options.opacity).toBe(0.35)
+  })
+})

@@ -80,7 +80,18 @@ const L = {
   divIcon: vi.fn((options: unknown) => ({ options })),
   tileLayer: vi.fn(() => chainable()),
   control: { scale: vi.fn(() => chainable()) },
-  polyline: vi.fn((latlngs: unknown, options: unknown) => ({ latlngs, options })),
+  polyline: vi.fn((latlngs: unknown, options: Record<string, unknown>) => {
+    const line = {
+      latlngs,
+      options,
+      setStyle: vi.fn((style: Record<string, unknown>) => {
+        line.options = { ...line.options, ...style }
+        return line
+      }),
+    }
+    return line
+  }),
+  svg: vi.fn(() => ({ svgRenderer: true })),
   circleMarker: vi.fn((latlng: unknown, options: unknown) => {
     const marker = {
       latlng,
