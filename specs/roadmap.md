@@ -57,6 +57,7 @@ Goal: whole-track stats at a glance.
 - [x] Points and elevation loss removed from the summary
 - [x] Avg speed (moving), max speed, avg HR (time-weighted)
 - [x] Unit tests
+- [x] Amendment A: max speed ignores GPS settle spikes (start-up and after recording gaps)
 
 ### Phase 10 – Hover linking
 Goal: map and charts share a cursor.

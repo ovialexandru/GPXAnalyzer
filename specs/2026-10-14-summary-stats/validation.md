@@ -13,7 +13,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 ## Unit tests – metrics
 - [ ] Moving time excludes stops and segment pauses; constant motion gives moving time = duration.
 - [ ] Never moving → `movingTime` 0 and `avgSpeed` `null`; no time → moving stats, avg and max speed `null`.
-- [ ] Max speed is the largest value of the 5 s smoothed series.
+- [ ] Max speed is the largest value of the 5 s smoothed series outside ignored settle windows (Amendment A).
 - [ ] Avg HR is time-weighted (uneven sampling case gives 154, not 130), excludes segment pauses, falls back to the plain mean without time, and is `null` without HR.
 - [ ] Fixture totals match the reference table in `requirements.md` (speeds ±0.01 km/h, HR ±0.05 bpm, moving time exact).
 - [ ] 100 000-point synthetic track still computes in under 1 s.
@@ -29,7 +29,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 
 ## Manual – desktop and phone-width browser (`npm run dev`)
 - [ ] Each file in `GpxFiles/` shows avg speed, max speed and avg HR matching the independent reference values in `requirements.md` (rounded as displayed).
-- [ ] Compared with Garmin Connect for the same activities: avg speed and avg HR within ~5% (note the numbers in the PR description; known difference: kayak max speed from the start-up GPS spike).
+- [ ] Compared with Garmin Connect for the same activities: avg speed and avg HR within ~5% (note the numbers in the PR description).
 - [ ] The heading reads well with long track and file names, and the file name wraps below the track name on a narrow window.
 - [ ] Loading a second file updates all stats; a bad file leaves them unchanged.
 
@@ -46,3 +46,30 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] Existing `specs/` files are unchanged except for the roadmap, the phase renumbering and the superseded notes.
 - [ ] No files from `GpxFiles/` are committed.
 - [ ] The app is in a working, shippable state (mission principle: small steps).
+
+## Amendment A – Max speed settle filter
+Holds on a clean checkout of branch `2026-10-14-max-speed-settle`, in addition to everything above.
+
+Automated:
+- [ ] Lint, format check, `tsc -b`, unit tests, e2e tests and build all exit 0.
+- [ ] A start-up spike, and the same spike after a > 10 s recording gap or at a second segment's start, is ignored, including its decaying tail.
+- [ ] A gap of 10 s or less does not start a settle window.
+- [ ] Real 5, 10 and 20 s mid-track sprints, a 15 s sprint from the start, and a standing-then-sprint start all keep their true max.
+- [ ] Steady speed with small noise in the first 10 s ignores nothing (σ floor).
+- [ ] All speeds ignored → plain max; no speed → `null`.
+- [ ] Fixture max speeds unchanged: `run.gpx` 13.60 km/h, `bike.gpx` 33.73 km/h; existing summary tests pass unchanged.
+- [ ] The 100 000-point tracks (with and without a gap every 30 s) compute in under 1 s.
+
+Manual (`npm run dev`):
+- [ ] Kayak file: Max speed "10.6 km/h" (was 20.5); bike "41.9 km/h" and run "15.7 km/h" unchanged.
+- [ ] The speed chart still shows the kayak start-up spike (chart not filtered).
+
+Design:
+- [ ] `getMaxSpeed` is pure, lives in `src/metrics/maxSpeed.ts`, and its thresholds are named constants.
+- [ ] Only `totals.maxSpeed` changes; the `speed`/`pace` series, moving time and avg speed are untouched.
+- [ ] No new dependencies; no module over ~200 lines.
+
+Merge gate:
+- [ ] The Amendment A item in `specs/roadmap.md` (Phase 9) is ticked.
+- [ ] Only the Phase 9 spec files, the roadmap and the code/tests for this amendment changed.
+- [ ] No files from `GpxFiles/` are committed.

@@ -6,6 +6,14 @@ export { getAvailableFields } from './fields.ts'
 export type { AvailableFields } from './fields.ts'
 export { getSegmentLines, getTrackBounds } from './geometry.ts'
 export { getAverageHeartRate } from './heartRate.ts'
+export {
+  getMaxSpeed,
+  MIN_SPEED_SPREAD,
+  SETTLE_GAP_SECONDS,
+  SETTLE_REFERENCE_SECONDS,
+  SETTLE_SECONDS,
+  SPIKE_SIGMAS,
+} from './maxSpeed.ts'
 export { getMovingStats } from './movement.ts'
 export type { MovingStats } from './movement.ts'
 export type { LatLon, TrackBounds } from './geometry.ts'

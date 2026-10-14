@@ -2,6 +2,7 @@ import type { Track } from '../model/index.ts'
 import { getCumulativeDistance } from './distance.ts'
 import { getElevationChange } from './elevation.ts'
 import { getAverageHeartRate } from './heartRate.ts'
+import { getMaxSpeed } from './maxSpeed.ts'
 import { getMovingStats } from './movement.ts'
 import { getElapsedTime, getPaceSeries, getSpeedSeries } from './speed.ts'
 
@@ -18,7 +19,7 @@ export interface TrackTotals {
   movingTime: number | null
   /** m/s: moving distance / moving time. */
   avgSpeed: number | null
-  /** m/s: largest value of the smoothed speed series. */
+  /** m/s: largest smoothed speed, GPS settle spikes ignored. */
   maxSpeed: number | null
   /** bpm, time-weighted. */
   avgHeartRate: number | null
@@ -42,12 +43,6 @@ function lastNonNull(values: (number | null)[]): number | null {
   return null
 }
 
-function maxNonNull(values: (number | null)[]): number | null {
-  let max: number | null = null
-  for (const v of values) if (v !== null && (max === null || v > max)) max = v
-  return max
-}
-
 export function getTrackMetrics(track: Track): TrackMetrics {
   const distance = getCumulativeDistance(track)
   const elapsed = getElapsedTime(track)
@@ -67,7 +62,7 @@ export function getTrackMetrics(track: Track): TrackMetrics {
       elevationLoss: elevation?.loss ?? null,
       movingTime: moving?.time ?? null,
       avgSpeed: moving && moving.time > 0 ? moving.distance / moving.time : null,
-      maxSpeed: maxNonNull(speed),
+      maxSpeed: getMaxSpeed(track, elapsed, speed),
       avgHeartRate: getAverageHeartRate(track, elapsed),
     },
   }

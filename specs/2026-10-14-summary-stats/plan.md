@@ -45,3 +45,24 @@ Goal: whole-track stats at a glance (see `specs/roadmap.md`, Phase 9). API and b
 2. Manual check with `npm run dev` on every file in `GpxFiles/` against the reference values (see `validation.md`).
 3. Walk through `validation.md`.
 4. Tick the Phase 9 checkboxes in `specs/roadmap.md`.
+
+## 7. Amendment A – Max speed settle filter
+Rule, constants and reference values in `requirements.md`, "Amendment A". Branch `2026-10-14-max-speed-settle`.
+1. Create `src/metrics/maxSpeed.ts` with the constants and `getMaxSpeed(track, elapsed, speed)`:
+   - Per segment, collect the timed points and find the settle starts (first timed point, and each point after a gap > `SETTLE_GAP_SECONDS`).
+   - For each start: median and robust σ of the reference speeds (`SETTLE_REFERENCE_SECONDS`); if any settle-window speed exceeds median + `SPIKE_SIGMAS` × σ, mark the whole settle window as ignored.
+   - Return the max over non-ignored speeds, falling back to the plain max; `null` with no speed.
+2. In `getTrackMetrics`, compute `maxSpeed` with `getMaxSpeed` instead of the plain max; re-export `getMaxSpeed` and the constants from `src/metrics/index.ts`.
+3. Add `src/metrics/maxSpeed.test.ts` with synthetic tracks (points 1 s apart, ~8 km/h cruising):
+   - Start-up spike decaying over 5 s (e.g. 20 → 12 km/h) → max is the cruising peak; the decaying tail is ignored too.
+   - The same spike after a 30 s recording gap inside a segment → ignored; after a 5 s gap → not a settle start.
+   - The same spike at the start of the second segment → ignored.
+   - Real 5, 10 and 20 s sprints at 16 km/h mid-track → 16 km/h kept.
+   - Sprint from the start of recording lasting 15 s → 16 km/h kept.
+   - Standing 15 s, then sprinting → unchanged (slow values never trigger).
+   - Steady speed with ±0.3 m/s noise in the first 10 s → nothing ignored (σ floor).
+   - Track of only 8 s whose every speed is ignored → plain max fallback; no speed → `null`.
+   - Fixtures: `run.gpx` 13.60 km/h, `bike.gpx` 33.73 km/h (±0.01), `no-ele-time.gpx` `null`.
+4. Keep the 100 000-point performance test under 1 s; add a variant with a recording gap every 30 s (many settle starts).
+5. Manual: kayak file shows Max speed "10.6 km/h"; bike "41.9 km/h" and run "15.7 km/h" unchanged; the speed chart still shows the kayak start-up spike.
+6. Run the full gate (lint, format, `tsc -b`, unit, e2e, build), walk through the Amendment A items in `validation.md`, and tick the Amendment A roadmap item.

@@ -89,4 +89,17 @@ describe('getTrackMetrics', () => {
     expect(performance.now() - started).toBeLessThan(1000)
     expect(m.speed).toHaveLength(100_000)
   })
+
+  it('computes 100 000 points with a recording gap every 30 s in under 1 s', () => {
+    // A 15 s gap after every 30 points: ~3 300 settle windows for max speed.
+    const points = constantSpeedPoints(100_000, 3).map((p, i) => ({
+      ...p,
+      time: p.time! + Math.floor(i / 30) * 15_000,
+      hr: 120 + (i % 40),
+    }))
+    const started = performance.now()
+    const m = getTrackMetrics({ points, segmentStarts: [0] })
+    expect(performance.now() - started).toBeLessThan(1000)
+    expect(m.totals.maxSpeed).toBeCloseTo(3, 6)
+  })
 })
