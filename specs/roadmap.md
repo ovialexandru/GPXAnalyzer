@@ -61,8 +61,8 @@ Goal: whole-track stats at a glance.
 
 ### Phase 10 – Hover linking
 Goal: map and charts share a cursor.
-- [ ] Hover on chart moves a marker on the map
-- [ ] Hover on track shows position on charts
+- [x] Hover on chart moves a marker on the map
+- [x] Hover on track shows position on charts
 
 ### Phase 11 – Chart zoom
 Goal: zoom into a section.

@@ -4,6 +4,7 @@ import styles from './App.module.css'
 import { ChartsPanel } from './charts/index.ts'
 import { TrackMap } from './map/index.ts'
 import { FileDropZone, TrackSummary, useGpxUpload } from './upload/index.ts'
+import { ViewStoreProvider } from './view/index.ts'
 
 function preventDefault(e: Event) {
   e.preventDefault()
@@ -38,11 +39,12 @@ function App() {
         </p>
       )}
       {loaded && metrics && (
-        <>
+        // A fresh view store per track; the map and charts stay mounted.
+        <ViewStoreProvider resetKey={loaded}>
           <TrackSummary loaded={loaded} totals={metrics.totals} />
           <TrackMap track={loaded.track} />
           <ChartsPanel track={loaded.track} metrics={metrics} />
-        </>
+        </ViewStoreProvider>
       )}
     </main>
   )

@@ -1,5 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
-import { StrictMode } from 'react'
+import { screen, within } from '@testing-library/react'
 import { getTrackMetrics } from '../../metrics/index.ts'
 import {
   charts,
@@ -13,6 +12,7 @@ import bike from '../../test/fixtures/bike.gpx?raw'
 import noEleTime from '../../test/fixtures/no-ele-time.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
+import { renderWithViewStore as render } from '../../test/viewStore.tsx'
 import { ElevationChart } from './index.ts'
 import type { XAxisMode } from './xAxis.ts'
 
@@ -96,7 +96,8 @@ describe('ElevationChart', () => {
   })
 
   it('StrictMode double mount leaves one live chart with the data', () => {
-    render(<StrictMode>{chartFor(run)}</StrictMode>)
+    render(chartFor(run), { strict: true })
+    expect(charts.length).toBeGreaterThan(1)
     expect(liveCharts()).toHaveLength(1)
     expect(lastOption(liveCharts()[0]).series[0].data).toHaveLength(150)
   })

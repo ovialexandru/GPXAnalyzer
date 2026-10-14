@@ -4,6 +4,7 @@ import type { Track } from '../../model/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { SegmentedControl } from './SegmentedControl.tsx'
 import { buildSpeedOption, type SpeedMetric } from './speedOption.ts'
+import { useChartHover } from './useChartHover.ts'
 import { useECharts } from './useECharts.ts'
 import type { XAxisMode } from './xAxis.ts'
 
@@ -23,11 +24,17 @@ export function SpeedChart({ track, metrics, mode }: SpeedChartProps) {
   const [metric, setMetric] = useState<SpeedMetric>('speed')
   const hasTime = useMemo(() => getAvailableFields(track).time, [track])
   const { containerRef, chart } = useECharts()
+  const built = useMemo(
+    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric) : null),
+    [hasTime, track, metrics, mode, metric],
+  )
 
   useEffect(() => {
-    if (!chart || !hasTime) return
-    chart.setOption(buildSpeedOption(track, metrics, mode, metric), { notMerge: true })
-  }, [chart, hasTime, track, metrics, mode, metric])
+    if (!chart || !built) return
+    chart.setOption(built.option, { notMerge: true })
+  }, [chart, built])
+
+  useChartHover(chart, 'speed', built?.line ?? null, metrics, mode)
 
   return (
     <ChartCard

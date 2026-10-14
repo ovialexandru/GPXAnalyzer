@@ -1,6 +1,12 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import L from 'leaflet'
+import { Profiler } from 'react'
+import { flushFrame, stubAnimationFrames } from '../test/animationFrames.ts'
+import { liveCharts, resetEChartsMock } from '../test/echartsMock.ts'
 import noEleTime from '../test/fixtures/no-ele-time.gpx?raw'
 import run from '../test/fixtures/run.gpx?raw'
+import { mouseEventAt, project, resetLeafletMock, type FakeMap } from '../test/leafletMock.ts'
+import { parseTrack } from '../test/tracks.ts'
 import App from './App.tsx'
 
 // jsdom has no layout or canvas; TrackMap's and the charts' own tests cover the library calls.
@@ -211,6 +217,74 @@ describe('App', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(screen.getByText('fast.gpx')).toBeInTheDocument()
     expect(screen.queryByText('slow.gpx')).not.toBeInTheDocument()
+  })
+
+  describe('hover linking', () => {
+    beforeEach(() => {
+      resetEChartsMock()
+      resetLeafletMock()
+      stubAnimationFrames()
+    })
+
+    function liveMap(): FakeMap {
+      return vi.mocked(L.map).mock.results.at(-1)!.value
+    }
+
+    function hoverMarkers() {
+      return vi.mocked(L.marker).mock.results.map((r) => r.value)
+    }
+
+    it('links chart → map and map → charts without re-rendering any component', async () => {
+      const onRender = vi.fn()
+      const { container } = render(
+        <Profiler id="app" onRender={onRender}>
+          <App />
+        </Profiler>,
+      )
+      const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+      fireEvent.change(input, { target: { files: [gpxFile(run, 'run.gpx')] } })
+      await findSummary()
+      const commits = onRender.mock.calls.length
+      const [elevation, speed] = liveCharts()
+
+      elevation.emit('updateAxisPointer', { axesInfo: [{ axisDim: 'x', value: 0.5 }] })
+      flushFrame()
+      expect(hoverMarkers()).toHaveLength(1)
+      expect(hoverMarkers()[0].addTo).toHaveBeenCalledWith(liveMap())
+      expect(speed.dispatchAction).toHaveBeenCalled()
+
+      elevation.emit('globalout')
+      flushFrame()
+      expect(hoverMarkers()[0].remove).toHaveBeenCalled()
+
+      const p = parseTrack(run).points[100]
+      const { x, y } = project(p.lat, p.lon)
+      elevation.dispatchAction.mockClear()
+      liveMap().emit('mousemove', mouseEventAt(x, y))
+      flushFrame() // the map handles the move
+      flushFrame() // the store notifies
+      expect(hoverMarkers()[0].setLatLng).toHaveBeenCalledWith([p.lat, p.lon])
+      expect(elevation.dispatchAction).toHaveBeenCalledWith(
+        expect.objectContaining({ tooltipOption: { showContent: false } }),
+        { silent: true },
+      )
+
+      expect(onRender).toHaveBeenCalledTimes(commits)
+    })
+
+    it('a new file clears the hover', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      liveCharts()[0].emit('updateAxisPointer', { axesInfo: [{ axisDim: 'x', value: 0.5 }] })
+      flushFrame()
+      const marker = hoverMarkers()[0]
+
+      app.pick(gpxFile(noEleTime, 'second.gpx'))
+      await screen.findByText('second.gpx')
+      expect(marker.remove).toHaveBeenCalled()
+      expect(vi.mocked(L.map)).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('prevents the browser from opening files dropped outside the drop zone', () => {

@@ -3,6 +3,7 @@ import { getAvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { buildElevationOption } from './elevationOption.ts'
+import { useChartHover } from './useChartHover.ts'
 import { useECharts } from './useECharts.ts'
 import type { XAxisMode } from './xAxis.ts'
 
@@ -16,12 +17,18 @@ interface ElevationChartProps {
 export function ElevationChart({ track, metrics, mode }: ElevationChartProps) {
   const hasElevation = useMemo(() => getAvailableFields(track).ele, [track])
   const { containerRef, chart } = useECharts()
+  const built = useMemo(
+    () => (hasElevation ? buildElevationOption(track, metrics, mode) : null),
+    [hasElevation, track, metrics, mode],
+  )
 
   // Same chart across tracks and modes: replace the whole option.
   useEffect(() => {
-    if (!chart || !hasElevation) return
-    chart.setOption(buildElevationOption(track, metrics, mode), { notMerge: true })
-  }, [chart, hasElevation, track, metrics, mode])
+    if (!chart || !built) return
+    chart.setOption(built.option, { notMerge: true })
+  }, [chart, built])
+
+  useChartHover(chart, 'elevation', built?.line ?? null, metrics, mode)
 
   return (
     <ChartCard

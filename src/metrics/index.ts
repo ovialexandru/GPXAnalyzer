@@ -15,6 +15,7 @@ export {
   SPIKE_SIGMAS,
 } from './maxSpeed.ts'
 export { getMovingStats } from './movement.ts'
+export { createNearestPointFinder } from './nearest.ts'
 export type { MovingStats } from './movement.ts'
 export type { LatLon, TrackBounds } from './geometry.ts'
 export { getSegmentRanges } from './segments.ts'

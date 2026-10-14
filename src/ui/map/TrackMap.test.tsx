@@ -1,10 +1,17 @@
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent } from '@testing-library/react'
 import L from 'leaflet'
-import { StrictMode } from 'react'
+import { flushFrame, stubAnimationFrames } from '../../test/animationFrames.ts'
 import bike from '../../test/fixtures/bike.gpx?raw'
 import noEleTime from '../../test/fixtures/no-ele-time.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
-import { addedControls, resetLeafletMock } from '../../test/leafletMock.ts'
+import {
+  addedControls,
+  mouseEventAt,
+  project,
+  resetLeafletMock,
+  type FakeMap,
+} from '../../test/leafletMock.ts'
+import { renderWithViewStore as render } from '../../test/viewStore.tsx'
 import { getTrackBounds } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { parseGpx } from '../../parser/index.ts'
@@ -19,7 +26,7 @@ function track(text: string): Track {
 }
 
 /** The map from the n-th `L.map` call. */
-function createdMap(n = 0) {
+function createdMap(n = 0): FakeMap {
   return vi.mocked(L.map).mock.results[n].value
 }
 
@@ -50,6 +57,7 @@ function fitButton(): HTMLButtonElement {
 
 beforeEach(() => {
   resetLeafletMock()
+  stubAnimationFrames()
 })
 
 describe('TrackMap', () => {
@@ -149,10 +157,9 @@ describe('TrackMap', () => {
     const t = track(run)
     render(<TrackMap track={t} />)
     const map = createdMap()
-    const handler = (event: string) => map.on.mock.calls.find(([e]: [string]) => e === event)[1]
     vi.mocked(map.fitBounds).mockClear()
 
-    handler('zoomstart')()
+    map.emit('zoomstart')
     fireEvent.click(fitButton())
     expect(map.fitBounds).not.toHaveBeenCalled()
     expect(map.once).toHaveBeenCalledWith('zoomend', expect.any(Function))
@@ -160,7 +167,7 @@ describe('TrackMap', () => {
     map.once.mock.calls[0][1]()
     expect(map.fitBounds).toHaveBeenCalledWith(...fitArgs(t))
 
-    handler('zoomend')()
+    map.emit('zoomend')
     fireEvent.click(fitButton())
     expect(map.fitBounds).toHaveBeenCalledTimes(2)
   })
@@ -172,11 +179,7 @@ describe('TrackMap', () => {
   })
 
   it('StrictMode double mount leaves one live map with the track on it', () => {
-    render(
-      <StrictMode>
-        <TrackMap track={track(run)} />
-      </StrictMode>,
-    )
+    render(<TrackMap track={track(run)} />, { strict: true })
     const maps = vi.mocked(L.map).mock.results.map((r) => r.value)
     expect(maps.length).toBeGreaterThan(1)
     const live = maps.filter((m) => vi.mocked(m.remove).mock.calls.length === 0)
@@ -187,5 +190,125 @@ describe('TrackMap', () => {
     )
     expect(shown).toHaveLength(1)
     expect(shown[0].addTo).toHaveBeenCalledWith(live[0])
+  })
+})
+
+describe('TrackMap hover', () => {
+  function hoverMarkers() {
+    return vi.mocked(L.marker).mock.results.map((r) => r.value)
+  }
+
+  /** Mouse event `dx` px east of a track point. */
+  function eastOf(t: Track, index: number, dx: number) {
+    const { x, y } = project(t.points[index].lat, t.points[index].lon)
+    return mouseEventAt(x + dx, y)
+  }
+
+  it('a store hover adds the marker at the point; null removes it', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    expect(L.marker).not.toHaveBeenCalled()
+
+    store.setHover({ index: 30, source: 'elevation' })
+    flushFrame()
+    expect(L.marker).toHaveBeenCalledTimes(1)
+    const [marker] = hoverMarkers()
+    expect(marker.latlng).toEqual([t.points[30].lat, t.points[30].lon])
+    expect(marker.options).toMatchObject({ interactive: false, keyboard: false })
+    expect(marker.addTo).toHaveBeenCalledWith(createdMap())
+    const icon = vi.mocked(L.divIcon).mock.calls[0][0]
+    expect(icon?.html).toContain('data-hover-marker')
+    expect(icon?.iconSize).toEqual([14, 14])
+
+    store.setHover(null)
+    flushFrame()
+    expect(marker.remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('a new index moves the same marker', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    store.setHover({ index: 30, source: 'speed' })
+    flushFrame()
+    store.setHover({ index: 31, source: 'speed' })
+    flushFrame()
+    store.setHover(null)
+    flushFrame()
+    store.setHover({ index: 32, source: 'speed' })
+    flushFrame()
+
+    expect(L.marker).toHaveBeenCalledTimes(1)
+    const [marker] = hoverMarkers()
+    expect(marker.setLatLng).toHaveBeenCalledTimes(2)
+    expect(marker.latlng).toEqual([t.points[32].lat, t.points[32].lon])
+    expect(marker.addTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('a mouse move within 15 px hovers the nearest point; at 20 px it clears', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+
+    map.emit('mousemove', eastOf(t, 75, 10))
+    expect(store.getState().hover).toBeNull()
+    flushFrame()
+    expect(store.getState().hover).toEqual({ index: 75, source: 'map' })
+
+    // Points are a few px apart, so go well away from the track: east of the easternmost point.
+    const east = t.points.reduce((best, p, i) => (p.lon > t.points[best].lon ? i : best), 0)
+    map.emit('mousemove', eastOf(t, east, 20))
+    flushFrame()
+    expect(store.getState().hover).toBeNull()
+  })
+
+  it('handles at most one mouse move per frame, the latest', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+    map.emit('mousemove', eastOf(t, 10, 0))
+    map.emit('mousemove', eastOf(t, 75, 0))
+    flushFrame()
+    expect(store.getState().hover).toEqual({ index: 75, source: 'map' })
+  })
+
+  it('mouseout clears the map hover and drops a pending move', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+    map.emit('mousemove', eastOf(t, 75, 0))
+    flushFrame()
+    map.emit('mousemove', eastOf(t, 76, 0))
+    map.emit('mouseout')
+    flushFrame()
+    expect(store.getState().hover).toBeNull()
+  })
+
+  it('a tap (click) near the track hovers right away; a tap away clears', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+    map.emit('click', eastOf(t, 40, 5))
+    expect(store.getState().hover).toEqual({ index: 40, source: 'map' })
+    map.emit('click', mouseEventAt(0, 0))
+    expect(store.getState().hover).toBeNull()
+  })
+
+  it('leaving the map or moving away does not clear a chart’s hover', () => {
+    const t = track(run)
+    const { store } = render(<TrackMap track={t} />)
+    const map = createdMap()
+    store.setHover({ index: 5, source: 'elevation' })
+    map.emit('mouseout')
+    map.emit('click', mouseEventAt(0, 0))
+    expect(store.getState().hover).toEqual({ index: 5, source: 'elevation' })
+  })
+
+  it('a new track removes the marker and the old handlers', () => {
+    const { store, rerender } = render(<TrackMap track={track(run)} />)
+    store.setHover({ index: 30, source: 'map' })
+    flushFrame()
+    rerender(<TrackMap track={track(bike)} />)
+    expect(hoverMarkers()[0].remove).toHaveBeenCalled()
+    expect(createdMap().handlers.get('mousemove')?.size).toBe(1)
   })
 })

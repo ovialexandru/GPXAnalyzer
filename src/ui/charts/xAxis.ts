@@ -49,6 +49,36 @@ export function buildLineData(
   return { data, dataToPoint }
 }
 
+/** Point index nearest to axis value x (binary search; break items are skipped). Null when there's no data. */
+export function pointAtX(line: LineData, x: number): number | null {
+  const { data, dataToPoint } = line
+  // First data index whose x is >= the target.
+  let lo = 0
+  let hi = data.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (data[mid][0] < x) lo = mid + 1
+    else hi = mid
+  }
+  let after = lo
+  while (after < data.length && dataToPoint[after] === -1) after++
+  let before = lo - 1
+  while (before >= 0 && dataToPoint[before] === -1) before--
+  if (before < 0 && after >= data.length) return null
+  if (before < 0) return dataToPoint[after]
+  if (after >= data.length) return dataToPoint[before]
+  return x - data[before][0] <= data[after][0] - x ? dataToPoint[before] : dataToPoint[after]
+}
+
+/** Axis value of a point, or null when the point isn't on this axis (no time on the time axis). */
+export function xOfPoint(metrics: TrackMetrics, mode: XAxisMode, index: number): number | null {
+  if (mode === 'distance') {
+    const d = metrics.distance[index]
+    return d === undefined ? null : d / 1000
+  }
+  return metrics.elapsed[index] ?? null
+}
+
 const TIME_INTERVALS = [1, 2, 5, 10, 15, 20, 30, 60, 120, 180, 360].map((min) => min * 60)
 const MAX_TIME_TICKS = 6
 

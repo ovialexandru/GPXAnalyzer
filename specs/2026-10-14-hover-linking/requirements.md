@@ -39,8 +39,8 @@ interface ViewStore {
 function createViewStore(): ViewStore
 
 // src/ui/view/ViewStoreContext.tsx
-/** Provides one store per loaded track. The context value never changes, so providing it re-renders nothing. */
-function ViewStoreProvider(props: { children: ReactNode }): JSX.Element
+/** Provides one store per `resetKey` (the loaded track) without remounting its children. The context value changes only then, so hovering re-renders nothing. */
+function ViewStoreProvider(props: { resetKey?: unknown; children: ReactNode }): JSX.Element
 /** Re-renders only when the selected slice changes (Object.is). */
 function useViewState<T>(selector: (s: ViewState) => T): T
 function useViewStore(): ViewStore

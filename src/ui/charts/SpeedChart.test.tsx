@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { getTrackMetrics } from '../../metrics/index.ts'
 import { charts, init, lastOption, resetEChartsMock } from '../../test/echartsMock.ts'
 import bike from '../../test/fixtures/bike.gpx?raw'
 import noEleTime from '../../test/fixtures/no-ele-time.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
+import { renderWithViewStore as render } from '../../test/viewStore.tsx'
 import { SpeedChart } from './index.ts'
 
 vi.mock('echarts/core', () => import('../../test/echartsMock.ts'))

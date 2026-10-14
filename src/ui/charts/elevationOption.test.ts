@@ -11,7 +11,7 @@ import type { XAxisMode } from './xAxis.ts'
 function option(text: string, mode: XAxisMode = 'distance') {
   const track = parseTrack(text)
   const metrics = getTrackMetrics(track)
-  return { track, metrics, option: buildElevationOption(track, metrics, mode) as any }
+  return { track, metrics, option: buildElevationOption(track, metrics, mode).option as any }
 }
 
 function tooltip(opt: any, value: [number, number | null]): string {
@@ -40,7 +40,7 @@ describe('buildElevationOption', () => {
   it('a point without elevation becomes null and the line is not connected across it', () => {
     const track = parseTrack(run)
     delete track.points[20].ele
-    const opt = buildElevationOption(track, getTrackMetrics(track), 'distance') as any
+    const opt = buildElevationOption(track, getTrackMetrics(track), 'distance').option as any
     expect(opt.series[0].data[20][1]).toBeNull()
     expect(opt.series[0].connectNulls).toBe(false)
   })

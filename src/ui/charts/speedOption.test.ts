@@ -10,7 +10,7 @@ import type { XAxisMode } from './xAxis.ts'
 /* eslint-disable @typescript-eslint/no-explicit-any -- reading back loosely typed option objects */
 
 function build(track: Track, metrics: TrackMetrics, mode: XAxisMode, metric: SpeedMetric) {
-  return buildSpeedOption(track, metrics, mode, metric) as any
+  return buildSpeedOption(track, metrics, mode, metric).option as any
 }
 
 function fixture(text: string) {

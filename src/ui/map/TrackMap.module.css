@@ -8,6 +8,24 @@
   isolation: isolate;
 }
 
+/* Replaces Leaflet's default white divIcon box. */
+.hoverIcon {
+  background: none;
+  border: none;
+  pointer-events: none;
+}
+
+.hoverDot {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.45);
+}
+
 .fitButton {
   display: flex;
   align-items: center;

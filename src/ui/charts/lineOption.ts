@@ -2,7 +2,7 @@ import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { AXIS_LABEL, FONT_SIZE, GRID, SPLIT_LINE } from './chartTheme.ts'
 import type { ChartOption, TooltipParams } from './echarts.ts'
-import { buildLineData, buildXAxis, formatX, type XAxisMode } from './xAxis.ts'
+import { buildLineData, buildXAxis, formatX, type LineData, type XAxisMode } from './xAxis.ts'
 
 export interface LineChartSpec {
   /** One y value per point, in display units. */
@@ -30,14 +30,29 @@ export function tooltipText(
   return `${formatX(x, mode)} · ${y === null || y === undefined ? '–' : formatY(y)}`
 }
 
-/** Pure: a single-series line chart over the chosen x-axis. Data index follows `buildLineData`. */
+export interface LineChart {
+  option: ChartOption
+  /** The series data and its point mapping, for hover lookups. */
+  line: LineData
+}
+
+/** Pure: a single-series line chart over the chosen x-axis. Data index follows `line`. */
 export function buildLineOption(
   track: Track,
   metrics: TrackMetrics,
   mode: XAxisMode,
   spec: LineChartSpec,
+): LineChart {
+  const line = buildLineData(track, metrics, mode, spec.ys)
+  return { option: lineOption(line, metrics, mode, spec), line }
+}
+
+function lineOption(
+  { data }: LineData,
+  metrics: TrackMetrics,
+  mode: XAxisMode,
+  spec: LineChartSpec,
 ): ChartOption {
-  const { data } = buildLineData(track, metrics, mode, spec.ys)
   return {
     animation: false,
     grid: GRID,

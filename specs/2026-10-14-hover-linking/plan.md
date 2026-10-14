@@ -8,7 +8,7 @@ Goal: map and charts share a cursor (see `specs/roadmap.md`, Phase 10). API and 
 ## 1. View store
 1. Create `src/ui/view/viewStore.ts` with `createViewStore()`. `setHover` stores the value right away and schedules one `requestAnimationFrame` notification. Further calls in the same frame only replace the value, and a call that doesn't change the value schedules nothing.
 2. Create `src/ui/view/ViewStoreContext.tsx` with `ViewStoreProvider`, `useViewStore`, `useViewState(selector)` (via `useSyncExternalStore`), and `src/ui/view/index.ts`.
-3. In `App`, wrap the summary, map and charts in `ViewStoreProvider` with `key` set to the loaded track, so each new track gets a fresh store.
+3. In `App`, wrap the summary, map and charts in `ViewStoreProvider` with `resetKey` set to the loaded track, so each new track gets a fresh store. (Not React `key`: that would remount the map and charts, breaking "same map/chart instances, toggle states kept" from Phases 5 and 8.)
 4. Add `src/ui/view/viewStore.test.ts` (fake timers / stubbed rAF):
    - Several `setHover` calls in one frame → one notification, last value.
    - Same value again → no notification.
