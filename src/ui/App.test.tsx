@@ -3,8 +3,9 @@ import noEleTime from '../test/fixtures/no-ele-time.gpx?raw'
 import run from '../test/fixtures/run.gpx?raw'
 import App from './App.tsx'
 
-// jsdom has no layout or canvas; TrackMap's own tests cover the Leaflet calls.
+// jsdom has no layout or canvas; TrackMap's and the charts' own tests cover the library calls.
 vi.mock('leaflet', () => import('../test/leafletMock.ts'))
+vi.mock('echarts/core', () => import('../test/echartsMock.ts'))
 
 function gpxFile(content: string, name: string): File {
   return new File([content], name, { type: 'application/gpx+xml' })
@@ -45,6 +46,15 @@ function badges(summary: HTMLElement): string[] {
     : []
 }
 
+/** The summary's `dt`/`dd` pairs as label → value. */
+function details(summary: HTMLElement): Record<string, string> {
+  const entries = [...summary.querySelectorAll('dt')].map((dt) => [
+    dt.textContent ?? '',
+    dt.nextElementSibling?.textContent ?? '',
+  ])
+  return Object.fromEntries(entries)
+}
+
 describe('App', () => {
   it('renders the app title and the drop zone', () => {
     renderApp()
@@ -62,11 +72,50 @@ describe('App', () => {
     expect(badges(summary)).toEqual(['Elevation', 'Time', 'Heart rate', 'Cadence'])
   })
 
+  it('shows distance, duration and elevation totals', async () => {
+    renderApp().pick(gpxFile(run, 'run.gpx'))
+    const summary = await findSummary()
+    expect(details(summary)).toEqual({
+      Track: 'Run fixture',
+      Points: '150',
+      Distance: '1.47 km',
+      Duration: '10:44',
+      'Elevation gain': '6 m',
+      'Elevation loss': '3 m',
+    })
+  })
+
+  it('shows only the distance for a track without time or elevation', async () => {
+    renderApp().pick(gpxFile(noEleTime, 'no-ele-time.gpx'))
+    const summary = await findSummary()
+    expect(details(summary)).toEqual({
+      Track: 'No elevation or time fixture',
+      Points: '80',
+      Distance: '1.72 km',
+    })
+  })
+
   it('shows the track map only after a successful upload', async () => {
     renderApp().pick(gpxFile(run, 'run.gpx'))
     expect(screen.queryByRole('region', { name: 'Track map' })).not.toBeInTheDocument()
     await findSummary()
     expect(screen.getByRole('region', { name: 'Track map' })).toBeInTheDocument()
+  })
+
+  it('shows the x-axis toggle and both charts only after a successful upload', async () => {
+    renderApp().pick(gpxFile(run, 'run.gpx'))
+    expect(screen.queryByRole('region', { name: 'Elevation chart' })).not.toBeInTheDocument()
+    await findSummary()
+    expect(screen.getByRole('group', { name: 'X axis' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Elevation chart' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Speed chart' })).toBeInTheDocument()
+  })
+
+  it('shows no charts for a bad file', async () => {
+    renderApp().pick(gpxFile('hello', 'notes.txt'))
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('region', { name: 'Elevation chart' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Speed chart' })).not.toBeInTheDocument()
   })
 
   it('shows no track map for a bad file', async () => {

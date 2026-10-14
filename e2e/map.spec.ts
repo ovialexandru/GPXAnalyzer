@@ -1,29 +1,8 @@
 import { expect, test } from '@playwright/test'
-import path from 'node:path'
-
-const FIXTURES = path.join(import.meta.dirname, '../src/test/fixtures')
-const RUN_GPX = path.join(FIXTURES, 'run.gpx')
-const BIKE_GPX = path.join(FIXTURES, 'bike.gpx')
-
-// 1×1 transparent PNG served for every OSM tile, so the test is offline and respects the tile policy.
-const TILE_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-  'base64',
-)
+import { BIKE_GPX, RUN_GPX, stubExternalRequests } from './helpers.ts'
 
 test('shows the track on a fitted map', async ({ page }) => {
-  const unexpected: string[] = []
-  await page.route(
-    (url) => url.hostname !== 'localhost',
-    (route) => {
-      const url = new URL(route.request().url())
-      if (url.hostname === 'tile.openstreetmap.org') {
-        return route.fulfill({ contentType: 'image/png', body: TILE_PNG })
-      }
-      unexpected.push(url.href)
-      return route.abort()
-    },
-  )
+  const unexpected = await stubExternalRequests(page)
 
   await page.goto('/')
   const input = page.locator('input[type="file"]')

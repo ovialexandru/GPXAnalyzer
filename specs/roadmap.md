@@ -36,20 +36,20 @@ Goal: track visible on a map.
 
 ### Phase 6 – Derived metrics
 Goal: computed series and totals.
-- [ ] Cumulative distance (haversine)
-- [ ] Speed and pace series
-- [ ] Elevation gain/loss with noise threshold
-- [ ] Unit tests
+- [x] Cumulative distance (haversine)
+- [x] Speed and pace series
+- [x] Elevation gain/loss with noise threshold
+- [x] Unit tests
 
 ### Phase 7 – Elevation chart
 Goal: first chart.
-- [ ] ECharts elevation vs distance
-- [ ] Handles tracks without elevation (hidden/empty state)
+- [x] ECharts elevation vs distance
+- [x] Handles tracks without elevation (hidden/empty state)
 
 ### Phase 8 – Speed/pace chart and axis toggle
 Goal: second chart and x-axis choice.
-- [ ] Speed/pace chart
-- [ ] Toggle x-axis: distance / time
+- [x] Speed/pace chart
+- [x] Toggle x-axis: distance / time
 
 ### Phase 9 – Hover linking
 Goal: map and charts share a cursor.

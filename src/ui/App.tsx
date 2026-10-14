@@ -1,5 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { getTrackMetrics } from '../metrics/index.ts'
 import styles from './App.module.css'
+import { ChartsPanel } from './charts/index.ts'
 import { TrackMap } from './map/index.ts'
 import { FileDropZone, TrackSummary, useGpxUpload } from './upload/index.ts'
 
@@ -9,6 +11,8 @@ function preventDefault(e: Event) {
 
 function App() {
   const { loaded, error, notice, loading, loadFiles } = useGpxUpload()
+  // Computed once per track; the summary and the charts share it.
+  const metrics = useMemo(() => loaded && getTrackMetrics(loaded.track), [loaded])
 
   // A file dropped outside the drop zone would otherwise be opened by the browser, replacing the app.
   useEffect(() => {
@@ -33,10 +37,11 @@ function App() {
           {error.message}
         </p>
       )}
-      {loaded && (
+      {loaded && metrics && (
         <>
-          <TrackSummary loaded={loaded} />
+          <TrackSummary loaded={loaded} totals={metrics.totals} />
           <TrackMap track={loaded.track} />
+          <ChartsPanel track={loaded.track} metrics={metrics} />
         </>
       )}
     </main>

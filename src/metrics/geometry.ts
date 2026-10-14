@@ -1,4 +1,5 @@
 import type { Track } from '../model/index.ts'
+import { getSegmentRanges } from './segments.ts'
 
 /** [lat, lon] in degrees; plain tuples so metrics stays free of Leaflet types. */
 export type LatLon = [number, number]
@@ -13,15 +14,9 @@ export interface TrackBounds {
 
 /** One coordinate list per segment, split at `track.segmentStarts`. Empty segments are skipped. */
 export function getSegmentLines(track: Track): LatLon[][] {
-  const { points, segmentStarts } = track
-  const lines: LatLon[][] = []
-  for (let s = 0; s < segmentStarts.length; s++) {
-    const start = segmentStarts[s]
-    const end = s + 1 < segmentStarts.length ? segmentStarts[s + 1] : points.length
-    if (end <= start) continue
-    lines.push(points.slice(start, end).map((p): LatLon => [p.lat, p.lon]))
-  }
-  return lines
+  return getSegmentRanges(track).map(([start, end]) =>
+    track.points.slice(start, end).map((p): LatLon => [p.lat, p.lon]),
+  )
 }
 
 /** Bounding box of all points; null for a track with no points. */

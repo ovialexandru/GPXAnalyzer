@@ -3,7 +3,7 @@ Feature specification:
 Find the next phase on specs/roadmap.md and make a branch, ask me about the feature spec.
 Create:
 	- 'plan.md' as a series of numbered task groups.
-	- 'requrement.md' for scpe, decisions, context
+	- 'requirements.md' for scpe, decisions, context
 	- 'validation.md' for how to know if implementation succeded and can be merged
 	Refer to specs/mision.md and specs/techstack.md for guidance.
 	Important: you MUST use your AskUserQuestion tool, grouped on these 3, before writing to disc.
@@ -18,6 +18,7 @@ Feature implementation:
 
 Committing:
     Mark this phase as complete in specs/roadmap.md, commit this work, switch to main and merge this branch then delete it.
+
 
 replaining..
     update techstack.md to capture that we want to use Vitest tests for validation and write a script in package.json .
