@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('loads a GPX file and then rejects a non-GPX file', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const { input, summary } = trackPage(page)
 
   await input.setInputFiles(RUN_GPX)
@@ -32,7 +32,7 @@ test('loads a GPX file and then rejects a non-GPX file', async ({ page }) => {
 })
 
 test('shows the stats of a two-segment track', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('./')
   const { input, summary } = trackPage(page)
   await input.setInputFiles(BIKE_GPX)
   await expect(summary.getByRole('heading', { name: 'Bike fixture' })).toBeVisible()
@@ -47,7 +47,7 @@ test('shows the stats of a two-segment track', async ({ page }) => {
 
 test('no horizontal page scroll at phone width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 })
-  await page.goto('/')
+  await page.goto('./')
   await trackPage(page).input.setInputFiles(BIKE_GPX)
   await expect(page.getByRole('heading', { name: 'Bike fixture' })).toBeVisible()
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)

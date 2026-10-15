@@ -4,7 +4,7 @@ import { BIKE_GPX, RUN_GPX, stubExternalRequests } from './helpers.ts'
 test('shows the track on a fitted map', async ({ page }) => {
   const unexpected = await stubExternalRequests(page)
 
-  await page.goto('/')
+  await page.goto('./')
   const input = page.locator('input[type="file"]')
   await input.setInputFiles(RUN_GPX)
 

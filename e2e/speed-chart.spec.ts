@@ -3,7 +3,7 @@ import { hover, NO_ELE_TIME_GPX, RUN_GPX, stubExternalRequests } from './helpers
 
 test('speed/pace chart and the x-axis toggle', async ({ page }) => {
   const unexpected = await stubExternalRequests(page)
-  await page.goto('/')
+  await page.goto('./')
   const input = page.locator('input[type="file"]')
   const elevation = page.getByRole('region', { name: 'Elevation chart' })
   const speed = page.getByRole('region', { name: 'Speed chart' })
@@ -50,7 +50,7 @@ test('speed/pace chart and the x-axis toggle', async ({ page }) => {
 
 test('the x-axis toggle works with the keyboard', async ({ page }) => {
   await stubExternalRequests(page)
-  await page.goto('/')
+  await page.goto('./')
   await page.locator('input[type="file"]').setInputFiles(RUN_GPX)
   const xAxis = page.getByRole('group', { name: 'X axis' })
   const distance = xAxis.getByRole('radio', { name: 'Distance' })

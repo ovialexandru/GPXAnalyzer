@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import path from 'node:path'
 
 const FIXTURES = path.join(import.meta.dirname, '../src/test/fixtures')
@@ -19,13 +19,15 @@ const TILE_PNG = Buffer.from(
 )
 
 /**
- * Serves OSM tiles locally and aborts every other non-localhost request.
+ * Serves OSM tiles locally and aborts every other request that leaves the site under test
+ * (the `baseURL` origin: the dev server, the preview server or the live site).
  * Returns the list of aborted URLs, which a test should expect to be empty.
  */
 export async function stubExternalRequests(page: Page): Promise<string[]> {
   const unexpected: string[] = []
+  const site = new URL(test.info().project.use.baseURL ?? 'http://localhost').origin
   await page.route(
-    (url) => url.hostname !== 'localhost',
+    (url) => url.origin !== site,
     (route) => {
       const url = new URL(route.request().url())
       if (url.hostname === 'tile.openstreetmap.org') {
@@ -73,7 +75,7 @@ export async function openPage(page: Page) {
   page.on('console', (m) => {
     if (m.type() === 'error' || m.type() === 'warning') consoleErrors.push(m.text())
   })
-  await page.goto('/')
+  await page.goto('./')
   return { unexpected, consoleErrors }
 }
 
