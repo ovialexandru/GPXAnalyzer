@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
+import type { Units } from '../units/units.ts'
 import { useViewStore, type PointRange } from '../view/index.ts'
 import { BRUSH_CURSOR } from './brushOption.ts'
 import type { ECharts } from './echarts.ts'
@@ -9,6 +10,14 @@ import { rangeToX, xToRange, type LineData, type XAxisMode } from './xAxis.ts'
 interface BrushEvent {
   areas?: { coordRange?: number[] }[]
 }
+
+/** Finger travel in px after which a one-finger gesture counts as a scroll or a brush. */
+export const GESTURE_SLOP = 10
+
+/** What the current touch gesture turned out to be. */
+type Gesture = 'undecided' | 'brush' | 'scroll' | 'pinch'
+
+const noop = () => {}
 
 /** Point range under a brush event's band; null without one, or when no point is inside. */
 function brushedRange(line: LineData, e: unknown): PointRange | null {
@@ -23,14 +32,17 @@ function brushedRange(line: LineData, e: unknown): PointRange | null {
  * after every new option (new data, x-axis or speed/pace switch), which drops the brush, so it
  * re-activates it and redraws the selection in the new units.
  *
- * While a brush is active ECharts ignores pinch zoom, so a second finger switches the brush off for
- * the gesture and the selection from before it is put back afterwards.
+ * Touch: while a brush is active ECharts ignores pinch zoom, and it cancels every touch, so the page
+ * can't scroll. A second finger (pinch), or one finger that starts mostly vertical (scroll), switches
+ * the brush off for the gesture, and the selection from before it is put back afterwards. Until the
+ * gesture is known, and while it scrolls, ECharts' `preventDefault` calls are disarmed.
  */
 export function useChartBrush(
   chart: ECharts | null,
   line: LineData | null,
   metrics: TrackMetrics,
   mode: XAxisMode,
+  units: Units = 'metric',
 ) {
   const store = useViewStore()
 
@@ -58,7 +70,7 @@ export function useChartBrush(
 
     const draw = (selection: PointRange | null) => {
       shown = selection
-      const x = selection && rangeToX(metrics, mode, selection)
+      const x = selection && rangeToX(metrics, mode, selection, units)
       dispatch({
         type: 'brush',
         areas: x ? [{ brushType: 'lineX', xAxisIndex: 0, coordRange: x }] : [],
@@ -70,12 +82,14 @@ export function useChartBrush(
       if (selection !== shown) draw(selection)
     }
 
-    // Selection before the current touch, and whether that touch became a pinch.
+    // Selection before the current touch, what the touch became, and where it started.
     let beforeTouch: PointRange | null = null
-    let pinching = false
+    let gesture: Gesture = 'brush'
+    let start = { x: 0, y: 0 }
+    const suspended = () => gesture === 'pinch' || gesture === 'scroll'
 
     const onBrush = (e: unknown) => {
-      if (dispatching || pinching) return
+      if (dispatching || suspended()) return
       store.setSelection(brushedRange(line, e))
       // The store may normalise or keep the range; either way this chart already shows the band.
       shown = store.getState().selection
@@ -83,34 +97,57 @@ export function useChartBrush(
 
     // Released: a band over fewer than 2 points selects nothing, so it goes too.
     const onBrushEnd = (e: unknown) => {
-      if (dispatching || pinching) return
+      if (dispatching || suspended()) return
       onBrush(e)
       if (shown === null && (e as BrushEvent).areas?.length) draw(null)
     }
 
+    const suspend = (as: 'pinch' | 'scroll') => {
+      if (!suspended()) setCursor(false)
+      gesture = as
+    }
+    // Lets the browser scroll: ECharts would cancel the touch before the direction is known.
+    const disarm = (e: TouchEvent) => {
+      if (gesture === 'undecided' || gesture === 'scroll') e.preventDefault = noop
+    }
+
     // Capture phase, before ECharts sees the touch.
     const onTouchStart = (e: TouchEvent) => {
-      // A new gesture (every finger down is new): remember the selection in case it becomes a pinch.
-      if (e.touches.length === e.changedTouches.length) beforeTouch = store.getState().selection
-      if (e.touches.length > 1 && !pinching) {
-        pinching = true
-        setCursor(false)
+      // A new gesture (every finger down is new): remember the selection in case it is undone.
+      if (e.touches.length === e.changedTouches.length) {
+        beforeTouch = store.getState().selection
+        gesture = 'undecided'
+        start = { x: e.touches[0].clientX, y: e.touches[0].clientY }
       }
+      if (e.touches.length > 1) suspend('pinch')
+      disarm(e)
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (gesture === 'undecided' && e.touches.length === 1) {
+        const dx = Math.abs(e.touches[0].clientX - start.x)
+        const dy = Math.abs(e.touches[0].clientY - start.y)
+        if (dy >= GESTURE_SLOP && dy > dx) suspend('scroll')
+        else if (dx >= GESTURE_SLOP) gesture = 'brush'
+      }
+      disarm(e)
     }
     const onTouchEndCapture = (e: TouchEvent) => {
       // Back on before ECharts handles the release, so the brush finishes the drag it started.
-      if (pinching && e.touches.length === 0) setCursor(true)
+      if (suspended() && e.touches.length === 0) setCursor(true)
     }
     // Bubble phase, after ECharts handled the release: undo whatever the first finger brushed.
     const onTouchEnd = (e: TouchEvent) => {
-      if (!pinching || e.touches.length > 0) return
-      pinching = false
+      if (e.touches.length > 0) return
+      const undo = suspended()
+      gesture = 'brush'
+      if (!undo) return
       store.setSelection(beforeTouch)
       draw(store.getState().selection)
     }
 
     const dom = chart.getDom()
     dom.addEventListener('touchstart', onTouchStart, { capture: true, passive: true })
+    dom.addEventListener('touchmove', onTouchMove, { capture: true, passive: true })
     for (const type of ['touchend', 'touchcancel'] as const) {
       dom.addEventListener(type, onTouchEndCapture, { capture: true, passive: true })
       dom.addEventListener(type, onTouchEnd, { passive: true })
@@ -123,6 +160,7 @@ export function useChartBrush(
     return () => {
       unsubscribe()
       dom.removeEventListener('touchstart', onTouchStart, { capture: true })
+      dom.removeEventListener('touchmove', onTouchMove, { capture: true })
       for (const type of ['touchend', 'touchcancel'] as const) {
         dom.removeEventListener(type, onTouchEndCapture, { capture: true })
         dom.removeEventListener(type, onTouchEnd)
@@ -132,5 +170,5 @@ export function useChartBrush(
       chart.off('brush', onBrush)
       chart.off('brushend', onBrushEnd)
     }
-  }, [chart, store, line, metrics, mode])
+  }, [chart, store, line, metrics, mode, units])
 }

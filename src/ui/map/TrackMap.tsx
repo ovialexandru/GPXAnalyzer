@@ -1,8 +1,9 @@
 import 'leaflet/dist/leaflet.css'
-import type L from 'leaflet'
+import L from 'leaflet'
 import { useCallback, useEffect, useRef } from 'react'
 import { getTrackBounds, type TrackBounds } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
+import { useUnits } from '../units/index.ts'
 import { useHoverMarker } from './hoverMarker.ts'
 import { createTrackLayers, fitTrack } from './trackLayers.ts'
 import styles from './TrackMap.module.css'
@@ -39,10 +40,28 @@ export function TrackMap({ track }: TrackMapProps) {
     }
   }, [map, track])
 
+  // Scale bar in the chosen units, swapped when they change.
+  const [units] = useUnits()
+  useEffect(() => {
+    if (!map) return
+    const scale = L.control
+      .scale({ metric: units === 'metric', imperial: units === 'imperial' })
+      .addTo(map)
+    return () => {
+      scale.remove()
+    }
+  }, [map, units])
+
   // After the effect above, so it sees the new track's lines.
   useSelectionOverlay(map, track, linesRef)
   useMapHover(map, track)
   useHoverMarker(map, track)
 
-  return <div ref={containerRef} className={styles.map} role="region" aria-label="Track map" />
+  return (
+    <>
+      <div ref={containerRef} className={styles.map} role="region" aria-label="Track map" />
+      {/* Shown on touch screens only (CSS), where one finger scrolls the page. */}
+      <p className={styles.touchHint}>Use two fingers to move or zoom the map.</p>
+    </>
+  )
 }

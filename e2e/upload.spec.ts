@@ -19,7 +19,9 @@ test('loads a GPX file and then rejects a non-GPX file', async ({ page }) => {
     mimeType: 'text/plain',
     buffer: Buffer.from('not a gpx file'),
   })
-  await expect(page.getByRole('alert')).toHaveText('Please choose a .gpx file.')
+  const alert = page.getByRole('alert')
+  await expect(alert.getByText("Couldn't open notes.txt")).toBeVisible()
+  await expect(alert.getByText('Please choose a .gpx file.')).toBeVisible()
   // The previous track stays shown.
   await expect(summary.getByRole('heading', { name: 'Run fixture' })).toBeVisible()
 })

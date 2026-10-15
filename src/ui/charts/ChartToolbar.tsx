@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useViewState, useViewStore } from '../view/index.ts'
 import styles from './ChartToolbar.module.css'
-import { SegmentedControl } from './SegmentedControl.tsx'
+import { SegmentedControl } from '../common/SegmentedControl.tsx'
 import type { XAxisMode } from './xAxis.ts'
 
 interface ChartToolbarProps {

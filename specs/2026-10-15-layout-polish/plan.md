@@ -23,11 +23,11 @@ Goal: usable on desktop and mobile (see `specs/roadmap.md`, Phase 15). Decisions
 5. Unit tests (`useChartBrush.test.tsx`): a vertical swipe switches the brush off and restores the selection; a horizontal drag keeps brushing; the patched `preventDefault` doesn't cancel. `TrackMap.test.tsx`: `dragging` follows the pointer media query.
 
 ## 4. Empty, loading and error states; layout
-1. `public/sample.gpx` (copy of `src/test/fixtures/run.gpx`), `loadSample()`.
-2. `useGpxUpload`: `loadingName`, `error.fileName`, `dismissError()`.
-3. `App`: intro panel with "Try a sample track" before the first track; loading status with spinner; error alert with title and Dismiss; compact `FileDropZone` after a track is loaded; drop zone and sample button disabled while loading.
+1. `public/sample.gpx` (copy of `src/test/fixtures/run.gpx`, track named "Sample run"), `fetchSample()`.
+2. `useGpxUpload`: `loadingName`, `loadSample()`, `error.fileName`, `dismissError()`.
+3. `App`: `EmptyState` (intro with "Try a sample track") before the first track; `UploadStatus` (loading status with spinner, error alert with title and Dismiss); compact `FileDropZone` after a track is loaded; drop zone and sample button disabled while loading.
 4. CSS: column 48 rem / 64 rem ≥ 1024 px; map `clamp(280px, 55vh, 600px)`; header row; compact drop zone.
-5. Tests (`App.test.tsx`, `FileDropZone.test.tsx`, `useGpxUpload`): intro visible only before the first track; sample loads "Run fixture"; loading text with the name and disabled controls; error title, Dismiss, track kept; compact zone after load.
+5. Tests (`App.test.tsx`): intro visible only before the first track; the sample loads from `/sample.gpx` (fetch spied, not stubbed globally: `vi.unstubAllGlobals` would drop the ECharts mock's ResizeObserver); a failing sample shows an error; loading text with the name and disabled controls; error title, Dismiss, track kept; compact zone after load; units switch and remembered choice.
 
 ## 5. Playwright
 1. Create `e2e/mobile.spec.ts` (375 × 667, touch):
@@ -38,7 +38,7 @@ Goal: usable on desktop and mobile (see `specs/roadmap.md`, Phase 15). Decisions
    - The touch caption is visible.
 2. Create `e2e/units.spec.ts` (desktop): switching to Imperial changes the summary, tooltips ("mi") and the scale bar; reload keeps Imperial.
 3. Create `e2e/states.spec.ts` (desktop): intro and sample button; sample loads; error alert with Dismiss; compact drop zone.
-4. Update specs that rely on the map height or old texts.
+4. Update specs that rely on old texts: `upload.spec.ts` checks the alert's title and message instead of its exact text.
 
 ## 6. Verification
 1. Run `npm run lint`, `npm run format:check`, `npx tsc -b`, `npm test`, `npm run test:e2e`, `npm run build`.

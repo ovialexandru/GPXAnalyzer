@@ -84,3 +84,34 @@ describe('formatCadence', () => {
     expect(formatCadence(rpm)).toBe(text)
   })
 })
+
+describe('imperial', () => {
+  it.each([
+    [0, '0 ft'],
+    [100, '328 ft'],
+    [160, '525 ft'],
+    [161, '0.10 mi'],
+    [2519.1, '1.57 mi'],
+    [39_390.7, '24.48 mi'],
+  ])('formatDistance %f m → %s', (meters, text) => {
+    expect(formatDistance(meters, 'imperial')).toBe(text)
+  })
+
+  it('formatElevation in feet', () => {
+    expect(formatElevation(22, 'imperial')).toBe('72 ft')
+  })
+
+  it('formatSpeed in mph', () => {
+    expect(formatSpeed(5.5, 'imperial')).toBe('12.3 mph')
+  })
+
+  it('formatPace per mile', () => {
+    // 0.312 s/m = 5:12 /km = 8:22 /mi
+    expect(formatPace(0.312, 'imperial')).toBe('8:22 /mi')
+  })
+
+  it('metric stays the default', () => {
+    expect(formatDistance(2519.1, 'metric')).toBe(formatDistance(2519.1))
+    expect(formatSpeed(3.4167, 'metric')).toBe('12.3 km/h')
+  })
+})

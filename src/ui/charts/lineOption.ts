@@ -5,6 +5,7 @@ import { buildBrush, HIDDEN_TOOLBOX } from './brushOption.ts'
 import type { ChartOption, TooltipParams } from './echarts.ts'
 import { buildLineData, buildXAxis, formatX, type LineData, type XAxisMode } from './xAxis.ts'
 import { buildDataZoom } from './zoomOption.ts'
+import type { Units } from '../units/units.ts'
 
 export interface LineChartSpec {
   /** One y value per point, in display units. */
@@ -25,11 +26,12 @@ export function tooltipText(
   params: TooltipParams,
   mode: XAxisMode,
   formatY: (y: number) => string,
+  units: Units = 'metric',
 ) {
   const first = Array.isArray(params) ? params[0] : params
   const [x, y] = (first?.value ?? []) as [number?, (number | null)?]
   if (x === undefined) return ''
-  return `${formatX(x, mode)} · ${y === null || y === undefined ? '–' : formatY(y)}`
+  return `${formatX(x, mode, units)} · ${y === null || y === undefined ? '–' : formatY(y)}`
 }
 
 export interface LineChart {
@@ -48,9 +50,10 @@ export function buildLineOption(
   mode: XAxisMode,
   spec: LineChartSpec,
   withSlider: boolean,
+  units: Units = 'metric',
 ): LineChart {
-  const line = buildLineData(track, metrics, mode, spec.ys)
-  return { option: lineOption(line, metrics, mode, spec, withSlider), line }
+  const line = buildLineData(track, metrics, mode, spec.ys, units)
+  return { option: lineOption(line, metrics, mode, spec, withSlider, units), line }
 }
 
 function lineOption(
@@ -59,6 +62,7 @@ function lineOption(
   mode: XAxisMode,
   spec: LineChartSpec,
   withSlider: boolean,
+  units: Units,
 ): ChartOption {
   return {
     animation: false,
@@ -66,9 +70,9 @@ function lineOption(
     textStyle: { fontSize: FONT_SIZE },
     tooltip: {
       trigger: 'axis',
-      formatter: (params) => tooltipText(params, mode, spec.formatY),
+      formatter: (params) => tooltipText(params, mode, spec.formatY, units),
     },
-    xAxis: buildXAxis(metrics, mode),
+    xAxis: buildXAxis(metrics, mode, units),
     dataZoom: buildDataZoom(mode, withSlider),
     brush: buildBrush(),
     toolbox: HIDDEN_TOOLBOX,

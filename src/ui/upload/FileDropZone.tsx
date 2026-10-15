@@ -4,10 +4,12 @@ import styles from './FileDropZone.module.css'
 interface FileDropZoneProps {
   onFiles: (files: FileList) => void
   disabled?: boolean
+  /** A single slim row, once a track is shown. */
+  compact?: boolean
 }
 
 /** Drop target plus a "Choose file" button backed by a hidden file input. */
-export function FileDropZone({ onFiles, disabled = false }: FileDropZoneProps) {
+export function FileDropZone({ onFiles, disabled = false, compact = false }: FileDropZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -41,7 +43,12 @@ export function FileDropZone({ onFiles, disabled = false }: FileDropZoneProps) {
     e.currentTarget.value = ''
   }
 
-  const className = [styles.zone, dragOver && styles.dragOver, disabled && styles.disabled]
+  const className = [
+    styles.zone,
+    compact && styles.compact,
+    dragOver && styles.dragOver,
+    disabled && styles.disabled,
+  ]
     .filter(Boolean)
     .join(' ')
 
@@ -54,7 +61,9 @@ export function FileDropZone({ onFiles, disabled = false }: FileDropZoneProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <p className={styles.text}>Drop a GPX file here or</p>
+      <p className={styles.text}>
+        {compact ? 'Drop another GPX file here or' : 'Drop a GPX file here or'}
+      </p>
       <button
         type="button"
         className={styles.button}

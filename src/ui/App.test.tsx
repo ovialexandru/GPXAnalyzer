@@ -199,13 +199,97 @@ describe('App', () => {
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
-  it('shows "Reading file…" while loading', async () => {
+  it('shows "Reading <name>…" and disables the drop zone and sample while loading', async () => {
     const { file, resolve } = pendingFile(run, 'run.gpx')
     renderApp().pick(file)
-    expect(await screen.findByRole('status')).toHaveTextContent('Reading file…')
+    expect(await screen.findByRole('status')).toHaveTextContent('Reading run.gpx…')
+    expect(screen.getByRole('button', { name: 'Choose file' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Try a sample track' })).toBeDisabled()
     resolve()
     await findSummary()
-    expect(screen.getByRole('status')).not.toHaveTextContent('Reading file…')
+    expect(screen.getByRole('status')).not.toHaveTextContent('Reading')
+    expect(screen.getByRole('button', { name: 'Choose file' })).toBeEnabled()
+  })
+
+  describe('empty, error and loaded states', () => {
+    // Not vi.unstubAllGlobals: that would also drop the ECharts mock's ResizeObserver stub.
+    afterEach(() => vi.mocked(fetch).mockRestore?.())
+
+    it('before any file: the intro with the privacy note and the sample button', () => {
+      renderApp()
+      const intro = screen.getByRole('region', { name: 'Getting started' })
+      expect(intro).toHaveTextContent('never uploaded')
+      expect(screen.getByText('Drop a GPX file here or')).toBeInTheDocument()
+    })
+
+    it('"Try a sample track" loads the bundled sample from the same origin', async () => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(run))
+      renderApp()
+      fireEvent.click(screen.getByRole('button', { name: 'Try a sample track' }))
+      const summary = await findSummary()
+      expect(fetchMock).toHaveBeenCalledWith('/sample.gpx')
+      expect(within(summary).getByText('sample.gpx')).toBeInTheDocument()
+      // Loaded: the intro goes and the drop zone is the compact row.
+      expect(screen.queryByRole('region', { name: 'Getting started' })).not.toBeInTheDocument()
+      expect(screen.getByText('Drop another GPX file here or')).toBeInTheDocument()
+    })
+
+    it('a sample that fails to load shows an error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('', { status: 404 }))
+      renderApp()
+      fireEvent.click(screen.getByRole('button', { name: 'Try a sample track' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "Couldn't open sample.gpxThe sample track could not be loaded.",
+      )
+    })
+
+    it('the error names the file; Dismiss removes it and keeps the loaded track', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      await findSummary()
+      app.pick(gpxFile('<gpx', 'bad.gpx'))
+      const alert = await screen.findByRole('alert')
+      expect(within(alert).getByText("Couldn't open bad.gpx")).toBeInTheDocument()
+      fireEvent.click(within(alert).getByRole('button', { name: 'Dismiss' }))
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(screen.getByRole('region', { name: 'Loaded track' })).toBeInTheDocument()
+    })
+  })
+
+  describe('units', () => {
+    beforeEach(() => localStorage.clear())
+    afterEach(() => localStorage.clear())
+
+    function unitsRadio(name: 'Metric' | 'Imperial') {
+      return within(screen.getByRole('group', { name: 'Units' })).getByRole('radio', { name })
+    }
+
+    it('the header switch defaults to Metric before any file', () => {
+      renderApp()
+      expect(unitsRadio('Metric')).toBeChecked()
+    })
+
+    it('Imperial changes the summary and is remembered', async () => {
+      renderApp().pick(gpxFile(run, 'run.gpx'))
+      const summary = await findSummary()
+      fireEvent.click(unitsRadio('Imperial'))
+      expect(details(summary)).toMatchObject({
+        Distance: '0.91 mi',
+        'Elevation gain': '20 ft',
+        'Avg speed': '5.1 mph',
+        'Max speed': '8.5 mph',
+        'Avg HR': '144 bpm',
+      })
+      expect(localStorage.getItem('gpx-analyzer.units')).toBe('imperial')
+    })
+
+    it('a remembered Imperial choice applies on the next visit', async () => {
+      localStorage.setItem('gpx-analyzer.units', 'imperial')
+      renderApp().pick(gpxFile(run, 'run.gpx'))
+      const summary = await findSummary()
+      expect(unitsRadio('Imperial')).toBeChecked()
+      expect(details(summary).Distance).toBe('0.91 mi')
+    })
   })
 
   it('applies only the latest result when loads overlap', async () => {

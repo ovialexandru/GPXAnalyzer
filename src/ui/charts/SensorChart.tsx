@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
+import { useUnits } from '../units/index.ts'
 import { ChartCard } from './ChartCard.tsx'
 import { buildSensorOption, type SensorKind } from './sensorOption.ts'
 import { useChartBrush } from './useChartBrush.ts'
@@ -22,10 +23,11 @@ interface SensorChartProps {
 
 /** Heart rate or cadence chart. The panel renders it only when the track has that data. */
 export function SensorChart({ track, metrics, mode, kind, withSlider = false }: SensorChartProps) {
+  const [units] = useUnits()
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => buildSensorOption(track, metrics, mode, kind, withSlider),
-    [track, metrics, mode, kind, withSlider],
+    () => buildSensorOption(track, metrics, mode, kind, withSlider, units),
+    [track, metrics, mode, kind, withSlider, units],
   )
 
   useEffect(() => {
@@ -34,9 +36,9 @@ export function SensorChart({ track, metrics, mode, kind, withSlider = false }: 
   }, [chart, built])
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
-  useChartZoom(chart, built.line, metrics, mode)
-  useChartBrush(chart, built.line, metrics, mode)
-  useChartHover(chart, kind, built.line, metrics, mode)
+  useChartZoom(chart, built.line, metrics, mode, units)
+  useChartBrush(chart, built.line, metrics, mode, units)
+  useChartHover(chart, kind, built.line, metrics, mode, units)
 
   return (
     <ChartCard

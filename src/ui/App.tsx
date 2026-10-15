@@ -3,7 +3,14 @@ import { getTrackMetrics } from '../metrics/index.ts'
 import styles from './App.module.css'
 import { ChartsPanel } from './charts/index.ts'
 import { TrackMap } from './map/index.ts'
-import { FileDropZone, TrackSummary, useGpxUpload } from './upload/index.ts'
+import { UnitsProvider, UnitsToggle } from './units/index.ts'
+import {
+  EmptyState,
+  FileDropZone,
+  TrackSummary,
+  UploadStatus,
+  useGpxUpload,
+} from './upload/index.ts'
 import { ViewStoreProvider } from './view/index.ts'
 
 function preventDefault(e: Event) {
@@ -11,7 +18,8 @@ function preventDefault(e: Event) {
 }
 
 function App() {
-  const { loaded, error, notice, loading, loadFiles } = useGpxUpload()
+  const upload = useGpxUpload()
+  const { loaded, loading } = upload
   // Computed once per track; the summary and the charts share it.
   const metrics = useMemo(() => loaded && getTrackMetrics(loaded.track), [loaded])
 
@@ -26,27 +34,30 @@ function App() {
   }, [])
 
   return (
-    <main className={styles.app}>
-      <h1 className={styles.title}>GPX Analyzer</h1>
-      <FileDropZone onFiles={loadFiles} />
-      <div role="status" className={styles.status}>
-        {loading && <p>Reading file…</p>}
-        {notice && <p>{notice}</p>}
-      </div>
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error.message}
-        </p>
-      )}
-      {loaded && metrics && (
-        // A fresh view store per track; the map and charts stay mounted.
-        <ViewStoreProvider resetKey={loaded} pointCount={loaded.track.points.length}>
-          <TrackSummary loaded={loaded} metrics={metrics} />
-          <TrackMap track={loaded.track} />
-          <ChartsPanel track={loaded.track} metrics={metrics} />
-        </ViewStoreProvider>
-      )}
-    </main>
+    <UnitsProvider>
+      <main className={styles.app}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>GPX Analyzer</h1>
+          <UnitsToggle />
+        </header>
+        <FileDropZone onFiles={upload.loadFiles} disabled={loading} compact={loaded !== null} />
+        {!loaded && <EmptyState onSample={upload.loadSample} disabled={loading} />}
+        <UploadStatus
+          loadingName={upload.loadingName}
+          notice={upload.notice}
+          error={upload.error}
+          onDismissError={upload.dismissError}
+        />
+        {loaded && metrics && (
+          // A fresh view store per track; the map and charts stay mounted.
+          <ViewStoreProvider resetKey={loaded} pointCount={loaded.track.points.length}>
+            <TrackSummary loaded={loaded} metrics={metrics} />
+            <TrackMap track={loaded.track} />
+            <ChartsPanel track={loaded.track} metrics={metrics} />
+          </ViewStoreProvider>
+        )}
+      </main>
+    </UnitsProvider>
   )
 }
 

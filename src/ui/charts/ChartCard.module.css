@@ -19,6 +19,8 @@
 
 .chart {
   min-height: 180px;
+  /* Vertical swipes scroll the page; horizontal drags and pinches go to the chart. */
+  touch-action: pan-y;
 }
 
 .empty {

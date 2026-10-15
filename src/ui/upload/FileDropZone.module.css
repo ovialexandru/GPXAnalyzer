@@ -14,6 +14,11 @@
     border-color 0.15s;
 }
 
+.compact {
+  padding: 0.5rem 1rem;
+  border-width: 1px;
+}
+
 .dragOver {
   border-color: #2563eb;
   background: #e0ebff;

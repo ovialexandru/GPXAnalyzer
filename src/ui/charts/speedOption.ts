@@ -1,6 +1,7 @@
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { formatDuration, formatPace, formatSpeed } from '../format.ts'
+import { METERS_PER_MILE, type Units } from '../units/units.ts'
 import { COLORS } from './chartTheme.ts'
 import { buildLineOption, type LineChart, type LineChartSpec } from './lineOption.ts'
 import type { XAxisMode } from './xAxis.ts'
@@ -9,13 +10,18 @@ export type SpeedMetric = 'speed' | 'pace'
 
 /** Slowest pace shown, in min/km; slower points (walking, almost stopped) are clipped. */
 export const PACE_AXIS_CAP = 20
+/** The same cap in min/mi (32 min/mi rounded down to a multiple of every pace step). */
+export const PACE_AXIS_CAP_MI = 30
 
-/** Pace tick steps in min/km; each divides PACE_AXIS_CAP so a capped axis ends on a tick. */
+/** Pace tick steps in min/km or min/mi; each divides both caps so a capped axis ends on a tick. */
 const PACE_STEPS = [0.5, 1, 2, 5]
 const MAX_PACE_TICKS = 6
 
-/** Round pace axis range (min/km) covering the data up to the cap, with at most ~6 steps. */
-export function paceAxisRange(ys: (number | null)[]): {
+/** Round pace axis range (min per km or mi) covering the data up to the cap, with at most ~6 steps. */
+export function paceAxisRange(
+  ys: (number | null)[],
+  cap = PACE_AXIS_CAP,
+): {
   min: number
   max: number
   interval: number
@@ -27,8 +33,8 @@ export function paceAxisRange(ys: (number | null)[]): {
     if (y < fastest) fastest = y
     if (y > slowest) slowest = y
   }
-  if (fastest === Infinity) return { min: 0, max: PACE_AXIS_CAP, interval: 5 }
-  const top = Math.min(PACE_AXIS_CAP, slowest)
+  if (fastest === Infinity) return { min: 0, max: cap, interval: 5 }
+  const top = Math.min(cap, slowest)
   const bottom = Math.min(fastest, top)
   const range = (step: number) => ({
     min: Math.floor(bottom / step) * step,
@@ -42,44 +48,49 @@ export function paceAxisRange(ys: (number | null)[]): {
   return range(PACE_STEPS.at(-1)!)
 }
 
-const toKmh = (v: number | null) => (v === null ? null : v * 3.6)
-const toMinPerKm = (v: number | null) => (v === null ? null : (v * 1000) / 60)
-
-function speedSpec(metrics: TrackMetrics): LineChartSpec {
+function speedSpec(metrics: TrackMetrics, units: Units): LineChartSpec {
+  // m/s per display unit (km/h or mph).
+  const unit = units === 'imperial' ? METERS_PER_MILE / 3600 : 1 / 3.6
+  const label = units === 'imperial' ? 'mph' : 'km/h'
   return {
-    ys: metrics.speed.map(toKmh),
+    ys: metrics.speed.map((v) => (v === null ? null : v / unit)),
     color: COLORS.speed,
     yRange: { min: 0 },
-    formatYLabel: (kmh) => `${kmh} km/h`,
-    formatY: (kmh) => formatSpeed(kmh / 3.6),
+    formatYLabel: (y) => `${y} ${label}`,
+    formatY: (y) => formatSpeed(y * unit, units),
   }
 }
 
-function paceSpec(metrics: TrackMetrics): LineChartSpec {
-  const ys = metrics.pace.map(toMinPerKm)
+function paceSpec(metrics: TrackMetrics, units: Units): LineChartSpec {
+  // Meters per pace distance (km or mi).
+  const distance = units === 'imperial' ? METERS_PER_MILE : 1000
+  const ys = metrics.pace.map((v) => (v === null ? null : (v * distance) / 60))
+  const cap = units === 'imperial' ? PACE_AXIS_CAP_MI : PACE_AXIS_CAP
   return {
     ys,
     color: COLORS.speed,
     // Inverted so faster is up, like the speed chart.
-    yRange: { inverse: true, ...paceAxisRange(ys) },
+    yRange: { inverse: true, ...paceAxisRange(ys, cap) },
     formatYLabel: (min) => formatDuration(min * 60),
-    formatY: (min) => formatPace((min * 60) / 1000),
+    formatY: (min) => formatPace((min * 60) / distance, units),
   }
 }
 
-/** Pure: speed (km/h) or pace (min/km, inverted, capped) vs distance or elapsed time. */
+/** Pure: speed (km/h or mph) or pace (min/km or min/mi, inverted, capped) vs distance or time. */
 export function buildSpeedOption(
   track: Track,
   metrics: TrackMetrics,
   mode: XAxisMode,
   metric: SpeedMetric,
   withSlider = false,
+  units: Units = 'metric',
 ): LineChart {
   return buildLineOption(
     track,
     metrics,
     mode,
-    metric === 'speed' ? speedSpec(metrics) : paceSpec(metrics),
+    metric === 'speed' ? speedSpec(metrics, units) : paceSpec(metrics, units),
     withSlider,
+    units,
   )
 }

@@ -8,6 +8,7 @@ import {
   formatHeartRate,
   formatSpeed,
 } from '../format.ts'
+import { useUnits } from '../units/index.ts'
 import { useDisplayedStats, useViewStore } from '../view/index.ts'
 import type { LoadedTrack } from './loadGpxFile.ts'
 import styles from './TrackSummary.module.css'
@@ -35,16 +36,17 @@ interface TrackSummaryProps {
 export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
   const { fileName, track } = loaded
   const store = useViewStore()
+  const [units] = useUnits()
   const { totals, selection } = useDisplayedStats(track, metrics)
   const fields = useMemo(() => getAvailableFields(track), [track])
   const badges = (Object.keys(FIELD_LABELS) as (keyof AvailableFields)[]).filter((k) => fields[k])
   // Totals that are null (no time / no elevation) are left out.
   const stats: [string, string | null][] = [
-    ['Distance', formatDistance(totals.distance)],
+    ['Distance', formatDistance(totals.distance, units)],
     ['Duration', orNull(totals.duration, formatDuration)],
-    ['Elevation gain', orNull(totals.elevationGain, formatElevation)],
-    ['Avg speed', orNull(totals.avgSpeed, formatSpeed)],
-    ['Max speed', orNull(totals.maxSpeed, formatSpeed)],
+    ['Elevation gain', orNull(totals.elevationGain, (m) => formatElevation(m, units))],
+    ['Avg speed', orNull(totals.avgSpeed, (v) => formatSpeed(v, units))],
+    ['Max speed', orNull(totals.maxSpeed, (v) => formatSpeed(v, units))],
     ['Avg HR', orNull(totals.avgHeartRate, formatHeartRate)],
     ['Max HR', orNull(totals.maxHeartRate, formatHeartRate)],
     ['Avg cadence', orNull(totals.avgCadence, formatCadence)],
@@ -61,8 +63,8 @@ export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
       {selection && (
         <div className={styles.selection}>
           <p className={styles.selectionText}>
-            Selection · {formatDistance(metrics.distance[selection[0]])} –{' '}
-            {formatDistance(metrics.distance[selection[1]])}
+            Selection · {formatDistance(metrics.distance[selection[0]], units)} –{' '}
+            {formatDistance(metrics.distance[selection[1]], units)}
           </p>
           <button
             type="button"

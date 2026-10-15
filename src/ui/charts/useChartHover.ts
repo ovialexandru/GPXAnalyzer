@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
+import type { Units } from '../units/units.ts'
 import { useViewStore, type HoverSource } from '../view/index.ts'
 import type { ECharts } from './echarts.ts'
 import { pointAtX, xOfPoint, type LineData, type XAxisMode } from './xAxis.ts'
@@ -19,6 +20,7 @@ export function useChartHover(
   line: LineData | null,
   metrics: TrackMetrics,
   mode: XAxisMode,
+  units: Units = 'metric',
 ) {
   const store = useViewStore()
 
@@ -53,7 +55,7 @@ export function useChartHover(
       if (hover?.source === source) return
       // A point outside the zoom window has no place on this chart.
       const visible = hover && (!zoom || (hover.index >= zoom[0] && hover.index <= zoom[1]))
-      const x = visible ? xOfPoint(metrics, mode, hover.index) : null
+      const x = visible ? xOfPoint(metrics, mode, hover.index, units) : null
       const px = x === null ? undefined : chart.convertToPixel({ xAxisIndex: 0 }, x)
       if (typeof px !== 'number' || !Number.isFinite(px)) {
         dispatch({ type: 'updateAxisPointer', currTrigger: 'leave' })
@@ -79,5 +81,5 @@ export function useChartHover(
       chart.off('updateAxisPointer', onPointer)
       chart.off('globalout', clearOwn)
     }
-  }, [chart, store, source, line, metrics, mode])
+  }, [chart, store, source, line, metrics, mode, units])
 }

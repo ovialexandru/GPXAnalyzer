@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { createEvent, fireEvent, screen, within } from '@testing-library/react'
 import { getTrackMetrics, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { flushFrame, stubAnimationFrames } from '../../test/animationFrames.ts'
@@ -7,6 +7,7 @@ import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
 import { renderWithViewStore } from '../../test/viewStore.tsx'
 import { ElevationChart, SpeedChart } from './index.ts'
+import { GESTURE_SLOP } from './useChartBrush.ts'
 import type { XAxisMode } from './xAxis.ts'
 
 vi.mock('echarts/core', () => import('../../test/echartsMock.ts'))
@@ -290,5 +291,77 @@ describe('useChartBrush pinch', () => {
     touch(elevation, 'touchEnd', 0)
     expect(store.getState().selection).toEqual(pointsBetween(metrics, 0.2, 0.8))
     expect(dispatches(elevation, 'takeGlobalCursor')).toHaveLength(1)
+  })
+})
+
+describe('useChartBrush scroll', () => {
+  /** One finger moved to (x, y) from its start at (0, 0). */
+  function move(chart: FakeChart, x: number, y: number) {
+    const event = createEvent.touchMove(chart.node, {
+      touches: [{ identifier: 0, clientX: x, clientY: y }],
+      changedTouches: [{ identifier: 0, clientX: x, clientY: y }],
+    })
+    fireEvent(chart.node, event)
+    return event
+  }
+
+  /** A touch event whose `preventDefault` reports, after dispatch, whether it still cancels. */
+  function cancels(event: Event) {
+    const before = event.defaultPrevented
+    event.preventDefault()
+    return event.defaultPrevented && !before
+  }
+
+  it(`a vertical swipe (≥ ${GESTURE_SLOP} px) switches the brush off and keeps the selection`, () => {
+    const { store, metrics, elevation } = setup()
+    store.setSelection([20, 60])
+    flushFrame()
+    touch(elevation, 'touchStart', 1)
+    move(elevation, 2, GESTURE_SLOP)
+    expect(dispatches(elevation, 'takeGlobalCursor').at(-1)?.[0].brushOption).toEqual({
+      brushType: false,
+    })
+    // What ECharts reports during the scroll is ignored.
+    brush(elevation, 0.1, 0.2)
+    release(elevation, 0.1, 0.2)
+    touch(elevation, 'touchEnd', 0)
+
+    expect(store.getState().selection).toEqual([20, 60])
+    expect(dispatches(elevation, 'takeGlobalCursor').at(-1)?.[0].brushOption).toEqual({
+      brushType: 'lineX',
+      brushMode: 'single',
+    })
+    expect(lastBrushAreas(elevation)).toEqual([
+      expect.objectContaining({ coordRange: [km(metrics, 20), km(metrics, 60)] }),
+    ])
+  })
+
+  it('a horizontal drag stays a brush', () => {
+    const { store, metrics, elevation } = setup()
+    touch(elevation, 'touchStart', 1)
+    move(elevation, GESTURE_SLOP, 3)
+    move(elevation, 40, GESTURE_SLOP * 3)
+    brush(elevation, 0.2, 0.8)
+    release(elevation, 0.2, 0.8)
+    touch(elevation, 'touchEnd', 0)
+    expect(store.getState().selection).toEqual(pointsBetween(metrics, 0.2, 0.8))
+    expect(dispatches(elevation, 'takeGlobalCursor')).toHaveLength(1)
+  })
+
+  it("ECharts can't cancel the touch until it is known to be a brush", () => {
+    const { elevation } = setup()
+    const start = createEvent.touchStart(elevation.node, {
+      touches: [{ identifier: 0, clientX: 0, clientY: 0 }],
+      changedTouches: [{ identifier: 0, clientX: 0, clientY: 0 }],
+    })
+    fireEvent(elevation.node, start)
+    expect(cancels(start)).toBe(false)
+    expect(cancels(move(elevation, 0, 4))).toBe(false)
+    expect(cancels(move(elevation, 0, GESTURE_SLOP))).toBe(false)
+    touch(elevation, 'touchEnd', 0)
+
+    touch(elevation, 'touchStart', 1)
+    expect(cancels(move(elevation, GESTURE_SLOP, 0))).toBe(true)
+    touch(elevation, 'touchEnd', 0)
   })
 })

@@ -88,11 +88,11 @@ Goal: optional sensor data.
 
 ### Phase 15 – Layout and polish
 Goal: usable on desktop and mobile.
-- [ ] Responsive, mobile-first layout (map + charts + stats stack on narrow screens)
-- [ ] Touch support: pinch/drag zoom, touch brush selection, tap-sized controls
-- [ ] Playwright checks at a phone viewport
-- [ ] Metric/imperial toggle
-- [ ] Empty, loading, and error states
+- [x] Responsive, mobile-first layout (map + charts + stats stack on narrow screens)
+- [x] Touch support: pinch/drag zoom, touch brush selection, tap-sized controls
+- [x] Playwright checks at a phone viewport
+- [x] Metric/imperial toggle
+- [x] Empty, loading, and error states
 
 ### Phase 16 – E2E tests
 Goal: protect the main flow.

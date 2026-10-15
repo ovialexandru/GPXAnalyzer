@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
+import { useUnits } from '../units/index.ts'
 import { ChartCard } from './ChartCard.tsx'
-import { SegmentedControl } from './SegmentedControl.tsx'
+import { SegmentedControl } from '../common/SegmentedControl.tsx'
 import { buildSpeedOption, type SpeedMetric } from './speedOption.ts'
 import { useChartBrush } from './useChartBrush.ts'
 import { useChartHover } from './useChartHover.ts'
@@ -27,10 +28,11 @@ interface SpeedChartProps {
 export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedChartProps) {
   const [metric, setMetric] = useState<SpeedMetric>('speed')
   const hasTime = useMemo(() => getAvailableFields(track).time, [track])
+  const [units] = useUnits()
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric, withSlider) : null),
-    [hasTime, track, metrics, mode, metric, withSlider],
+    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric, withSlider, units) : null),
+    [hasTime, track, metrics, mode, metric, withSlider, units],
   )
 
   useEffect(() => {
@@ -39,9 +41,9 @@ export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedCh
   }, [chart, built])
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
-  useChartZoom(chart, built?.line ?? null, metrics, mode)
-  useChartBrush(chart, built?.line ?? null, metrics, mode)
-  useChartHover(chart, 'speed', built?.line ?? null, metrics, mode)
+  useChartZoom(chart, built?.line ?? null, metrics, mode, units)
+  useChartBrush(chart, built?.line ?? null, metrics, mode, units)
+  useChartHover(chart, 'speed', built?.line ?? null, metrics, mode, units)
 
   return (
     <ChartCard

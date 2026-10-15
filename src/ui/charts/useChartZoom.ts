@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
+import type { Units } from '../units/units.ts'
 import { useViewStore, type PointRange } from '../view/index.ts'
 import type { ECharts } from './echarts.ts'
 import { axisExtent, pointAtX, rangeToX, xToRange, type LineData, type XAxisMode } from './xAxis.ts'
@@ -52,12 +53,13 @@ export function useChartZoom(
   line: LineData | null,
   metrics: TrackMetrics,
   mode: XAxisMode,
+  units: Units = 'metric',
 ) {
   const store = useViewStore()
 
   useEffect(() => {
     if (!chart || !line) return
-    const extent = axisExtent(metrics, mode)
+    const extent = axisExtent(metrics, mode, units)
     // The store zoom this chart shows; a fresh option shows the whole track.
     let shown: PointRange | null = null
     // Set while this hook drives the chart, so its own dataZoom doesn't echo back to the store.
@@ -67,7 +69,7 @@ export function useChartZoom(
       const { zoom } = store.getState()
       if (zoom === shown) return
       shown = zoom
-      const x = zoom && rangeToX(metrics, mode, zoom)
+      const x = zoom && rangeToX(metrics, mode, zoom, units)
       dispatching = true
       try {
         chart.dispatchAction(
@@ -98,5 +100,5 @@ export function useChartZoom(
       // The chart may already be disposed when its container went away first.
       if (!chart.isDisposed()) chart.off('datazoom', onDataZoom)
     }
-  }, [chart, store, line, metrics, mode])
+  }, [chart, store, line, metrics, mode, units])
 }

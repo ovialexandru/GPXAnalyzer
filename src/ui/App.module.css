@@ -1,3 +1,4 @@
+/* Mobile first: one column with 16 px gutters; wider column on desktop. */
 .app {
   display: flex;
   flex-direction: column;
@@ -9,23 +10,21 @@
   line-height: 1.5;
 }
 
+@media (min-width: 1024px) {
+  .app {
+    max-width: 64rem;
+  }
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
 .title {
   margin: 0;
   font-size: 1.5rem;
-}
-
-.status:empty {
-  display: none;
-}
-
-.status p {
-  margin: 0;
-}
-
-.error {
-  margin: 0;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: #fdecec;
-  color: #a11a1a;
 }

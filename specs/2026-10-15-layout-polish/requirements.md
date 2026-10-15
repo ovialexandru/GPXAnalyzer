@@ -16,7 +16,7 @@ Decided (recommended defaults; the user asked not to be asked unless necessary):
   - **Charts:** a one-finger gesture that starts mostly vertical scrolls the page; one that starts mostly horizontal brushes, as now. Pinch still zooms. A scroll gesture leaves the selection as it was.
 - **Units:** a "Units" switch (Metric / Imperial) in the page header, visible before a file is loaded. The choice is remembered in `localStorage` and defaults to Metric. It changes every distance, elevation, speed and pace: summary, selection line, chart axes and tooltips, and the map's scale bar.
 - **Layout:** still one column at every width (the side-by-side layout is the post-MVP "Desktop view mode"). The column grows to 64 rem on wide screens. The map height becomes `clamp(280px, 55vh, 600px)` instead of `60vh`. After a track is loaded, the drop zone shrinks to one compact row.
-- **Empty state:** before any file is loaded, an intro under the drop zone says what the app shows and that the file never leaves the device, with a **"Try a sample track"** button that loads a bundled sample (`public/sample.gpx`, a copy of the `run.gpx` fixture).
+- **Empty state:** before any file is loaded, an intro under the drop zone says what the app shows and that the file never leaves the device, with a **"Try a sample track"** button that loads a bundled sample (`public/sample.gpx`, a copy of the `run.gpx` fixture named "Sample run").
 - **Loading state:** "Reading run.gpx…" with a small spinner; the drop zone and the sample button are disabled while a file is read.
 - **Error state:** the alert names the file ("Couldn't open bad.gpx"), keeps the existing message, and has a "Dismiss" button. A previously loaded track stays.
 - Branch and spec directory `2026-10-15-layout-polish`.
@@ -59,8 +59,15 @@ formatPace(spm, units?)    // imperial: "8:22 /mi"
 function paceAxisRange(ys, cap = PACE_AXIS_CAP): { min; max; interval } // cap per units: 20 min/km, 30 min/mi
 
 // src/ui/upload
-function useGpxUpload(): GpxUpload // gains `loadingName: string | null`, `dismissError()`; `error` gains `fileName`
-function loadSample(): Promise<File> // fetches /sample.gpx as "sample.gpx"
+interface UploadFailure extends UploadError { fileName: string }
+function useGpxUpload(): GpxUpload // gains `loadingName`, `loadSample()`, `dismissError()`; `error` is an UploadFailure
+function fetchSample(): Promise<File> // fetches `${BASE_URL}sample.gpx` as "sample.gpx"
+function EmptyState(props: { onSample; disabled? }): JSX.Element // region "Getting started"
+function UploadStatus(props: { loadingName; notice; error; onDismissError }): JSX.Element // status + alert
+// FileDropZone gains `compact?: boolean`
+
+// src/ui/charts/useChartBrush.ts
+const GESTURE_SLOP = 10 // px of finger travel that decides scroll vs brush
 ```
 
 ## Behavior
@@ -101,7 +108,8 @@ function loadSample(): Promise<File> // fetches /sample.gpx as "sample.gpx"
 | Imperial short distances | Feet under 0.1 mi | Matches common apps; "0.03 mi" is hard to read |
 | Pace cap | 20 min/km, 30 min/mi | Same idea as Phase 8; 30 divides by every pace step |
 | Sample track | `public/sample.gpx` = `run.gpx` fixture | Has every field (elevation, time, HR, cadence); small; same origin, so still private and offline-safe |
-| Map height | `clamp(280px, 55vh, 600px)` | 60vh was huge on tall screens and pushed the charts away |
+| Map height | `clamp(280px, 55vh, 600px)`, `box-sizing: border-box` | 60vh was huge on tall screens and pushed the charts away; the border stays inside the limits |
+| Sample that fails to load | Alert "Couldn't open sample.gpx" / "The sample track could not be loaded." | Same error path as a bad file |
 | Column width | 48 rem phones/tablets, 64 rem ≥ 1024 px | More chart resolution on desktop without the post-MVP layout |
 | Toggle component | `SegmentedControl` moves to `src/ui/common/` | Now used by the header too, not only charts |
 

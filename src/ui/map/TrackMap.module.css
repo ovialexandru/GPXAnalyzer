@@ -1,11 +1,32 @@
 .map {
-  height: 60vh;
-  min-height: 320px;
+  box-sizing: border-box;
+  height: clamp(280px, 55vh, 600px);
   border: 1px solid #d5dbe5;
   border-radius: 12px;
   overflow: hidden;
   /* Keep Leaflet's panes and controls (z-index up to 1000) from overlapping later page content. */
   isolation: isolate;
+}
+
+/* Tap-sized zoom buttons (Leaflet's are 30 px). */
+.map :global(.leaflet-bar a) {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+  font-size: 22px;
+}
+
+.touchHint {
+  display: none;
+  margin: -0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #5b6475;
+}
+
+@media (pointer: coarse) {
+  .touchHint {
+    display: block;
+  }
 }
 
 /* Replaces Leaflet's default white divIcon box. */

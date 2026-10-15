@@ -15,6 +15,7 @@ import { renderWithViewStore as render } from '../../test/viewStore.tsx'
 import { getTrackBounds } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { parseGpx } from '../../parser/index.ts'
+import { UnitsProvider } from '../units/index.ts'
 import { TrackMap } from './index.ts'
 
 vi.mock('leaflet', () => import('../../test/leafletMock.ts'))
@@ -71,6 +72,7 @@ describe('TrackMap', () => {
     expect(L.map).toHaveBeenCalledTimes(1)
     expect(L.map).toHaveBeenCalledWith(getByRole('region', { name: 'Track map' }), {
       preferCanvas: true,
+      dragging: true,
     })
     expect(L.tileLayer).toHaveBeenCalledWith('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -84,6 +86,46 @@ describe('TrackMap', () => {
     expect(fitButton()).toHaveAccessibleName('Fit to track')
     expect(fitButton()).toHaveAttribute('type', 'button')
     expect(L.DomEvent.disableClickPropagation).toHaveBeenCalledWith(addedControls[0].container)
+  })
+
+  it('touch screen (coarse pointer): no one-finger dragging, so the page can scroll', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({ matches: query === '(pointer: coarse)' })),
+    )
+    try {
+      render(<TrackMap track={track(run)} />)
+      expect(L.map).toHaveBeenCalledWith(expect.any(HTMLElement), {
+        preferCanvas: true,
+        dragging: false,
+      })
+    } finally {
+      vi.unstubAllGlobals()
+      stubAnimationFrames()
+    }
+  })
+
+  it('the touch hint is rendered (CSS shows it on touch screens only)', () => {
+    const { getByText } = render(<TrackMap track={track(run)} />)
+    expect(getByText('Use two fingers to move or zoom the map.')).toBeInTheDocument()
+  })
+
+  it('imperial units: an imperial scale bar, swapped back on metric', () => {
+    localStorage.setItem('gpx-analyzer.units', 'imperial')
+    try {
+      const t = track(run)
+      const { rerender } = render(
+        <UnitsProvider>
+          <TrackMap track={t} />
+        </UnitsProvider>,
+      )
+      expect(L.control.scale).toHaveBeenLastCalledWith({ metric: false, imperial: true })
+      rerender(<TrackMap track={t} />)
+      expect(L.control.scale).toHaveBeenLastCalledWith({ metric: true, imperial: false })
+      expect(vi.mocked(L.control.scale).mock.results[0].value.remove).toHaveBeenCalled()
+    } finally {
+      localStorage.clear()
+    }
   })
 
   it('run.gpx: one polyline, two markers, fitted to the bounds', () => {

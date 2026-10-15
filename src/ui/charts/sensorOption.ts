@@ -1,6 +1,7 @@
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Track, TrackPoint } from '../../model/index.ts'
 import { formatCadence, formatHeartRate } from '../format.ts'
+import type { Units } from '../units/units.ts'
 import { COLORS } from './chartTheme.ts'
 import { buildLineOption, type LineChart } from './lineOption.ts'
 import type { XAxisMode } from './xAxis.ts'
@@ -15,13 +16,14 @@ const SENSORS: Record<
   cadence: { read: (p) => p.cad, color: COLORS.cadence, format: formatCadence },
 }
 
-/** Pure: raw heart rate (bpm) or cadence (rpm, as recorded) vs distance or elapsed time. */
+/** Pure: raw heart rate (bpm) or cadence (rpm, as recorded) vs distance or elapsed time. `units` only affects the x-axis. */
 export function buildSensorOption(
   track: Track,
   metrics: TrackMetrics,
   mode: XAxisMode,
   kind: SensorKind,
   withSlider = false,
+  units: Units = 'metric',
 ): LineChart {
   const { read, color, format } = SENSORS[kind]
   return buildLineOption(
@@ -36,5 +38,6 @@ export function buildSensorOption(
       formatY: format,
     },
     withSlider,
+    units,
   )
 }
