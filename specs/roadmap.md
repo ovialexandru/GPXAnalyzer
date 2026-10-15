@@ -111,6 +111,27 @@ Goal: public static site.
 - [ ] Gradient chart and max/avg speed highlights
 - [ ] Windsurf/kayak: top speed over N seconds, moving vs stopped time
 
+### Trim activity
+- [ ] Manually trim irrelevant portions at the start and/or end (e.g. before the real start, after finishing)
+- [ ] Trim handles on the chart (reusing range selection), with the trimmed-off parts dimmed on the map
+- [ ] Map, charts, and stats recompute from the trimmed track
+- [ ] Undo / reset to the original track
+- [ ] Export the trimmed track as GPX
+
+### Speed-colored track
+- [ ] Polyline colored by speed relative to the track's avg (moving) speed, as a red → green → blue gradient:
+  - red: speed below avg − 25%
+  - green: speed within avg ± 25%
+  - blue: speed above avg + 25%
+- [ ] Thresholds (the ±25% bands) and colors editable in a settings file, with the values above as defaults
+- [ ] Legend showing the color scale and speed thresholds
+- [ ] Toggle between plain and speed-colored polyline
+
+### Desktop view mode
+- [ ] Button that switches to a layout optimized for large screens (e.g. map and charts side by side, filling the viewport without page scroll)
+- [ ] Map and charts resize to the new layout (map refits bounds, charts redraw)
+- [ ] Toggle back to the default layout; choice remembered between visits
+
 ### Multi-file compare
 - [ ] Load several tracks and overlay on map
 - [ ] Overlay series on charts with a legend
