@@ -1,4 +1,7 @@
 // Shared view state (hover, zoom and selection), one store per loaded track.
+import type { PointRange } from '../../metrics/index.ts'
+
+export type { PointRange }
 
 export type HoverSource = 'map' | 'elevation' | 'speed'
 
@@ -8,9 +11,6 @@ export interface Hover {
   /** Who set it; that view handles its own feedback. */
   source: HoverSource
 }
-
-/** Inclusive point indices [first, last]. */
-export type PointRange = [first: number, last: number]
 
 export interface ViewState {
   hover: Hover | null

@@ -60,3 +60,22 @@ describe('getElevationChange', () => {
     expect(change.loss).toBeCloseTo(loss, 1)
   })
 })
+
+describe('getElevationChange with a range', () => {
+  it('anchors at the first elevation in the range', () => {
+    // A 100 m climb, then flat: the range [50, 100] only sees the last 50 m.
+    const eles = Array.from({ length: 121 }, (_, i) => Math.min(i, 100))
+    expect(getElevationChange(withElevation(eles), 3, [50, 120])).toEqual({ gain: 48, loss: 0 })
+  })
+
+  it('skips points without elevation; null when none in range has it', () => {
+    const track = withElevation([100, undefined, undefined, 120])
+    expect(getElevationChange(track, 3, [1, 2])).toBeNull()
+    expect(getElevationChange(track, 3, [1, 3])).toEqual({ gain: 0, loss: 0 })
+  })
+
+  it('the full range equals the whole track', () => {
+    const track = parseTrack(bike)
+    expect(getElevationChange(track, 3, [0, 199])).toEqual(getElevationChange(track))
+  })
+})

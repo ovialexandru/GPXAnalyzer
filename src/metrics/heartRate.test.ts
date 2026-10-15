@@ -54,3 +54,31 @@ describe('getAverageHeartRate', () => {
     expect(Math.abs(avg(parseTrack(text))! - bpm)).toBeLessThanOrEqual(0.05)
   })
 })
+
+describe('getAverageHeartRate with a range', () => {
+  const avgIn = (track: Track, range: [number, number]) =>
+    getAverageHeartRate(track, getElapsedTime(track), range)
+
+  it('weights only intervals inside the range', () => {
+    // Range [1, 2]: only 160 bpm held 9 s counts.
+    expect(avgIn(withHr([100, 160, 160], [0, 1, 10]), [1, 2])).toBe(160)
+  })
+
+  it('an interval across a segment boundary inside the range is excluded', () => {
+    const track = withHr([100, 100, 200, 200], [0, 1, 100, 101], [0, 2])
+    expect(avgIn(track, [0, 3])).toBe(150)
+  })
+
+  it('falls back to the plain mean of the range without time', () => {
+    expect(avgIn(withHr([100, 120, 140, 200]), [1, 2])).toBe(130)
+  })
+
+  it('null when no point in range has HR', () => {
+    expect(avgIn(withHr([undefined, undefined, 150], [0, 1, 2]), [0, 1])).toBeNull()
+  })
+
+  it('the full range equals the whole track', () => {
+    const track = parseTrack(bike)
+    expect(avgIn(track, [0, 199])).toBe(avg(track))
+  })
+})

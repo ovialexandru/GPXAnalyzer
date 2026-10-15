@@ -32,6 +32,7 @@ describe('getTrackMetrics', () => {
       elapsed: [],
       speed: [],
       pace: [],
+      settleIgnored: [],
       totals: {
         distance: 0,
         duration: null,

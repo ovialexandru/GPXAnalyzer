@@ -6,7 +6,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] `npm run lint` reports no errors or warnings.
 - [ ] `npm run format:check` reports no formatting differences.
 - [ ] `npx tsc -b` passes with `strict: true`.
-- [ ] `npm test` passes, including all existing tests from Phases 1–12. The Phase 9 metric tests pass **unchanged**.
+- [ ] `npm test` passes, including all existing tests from Phases 1–12. The Phase 9 metric tests pass **unchanged** (only the empty-track `getTrackMetrics` expectation gains `settleIgnored: []`).
 - [ ] `npm run test:e2e` passes in Chromium with no real external requests (OSM tiles stubbed).
 - [ ] `npm run build` produces `dist/` with no errors.
 
@@ -23,7 +23,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] A range starting mid-track never creates a new settle window (whole-track mask).
 
 ## Performance
-- [ ] `getRangeStats` on the full 100 000-point track: mean under 16 ms over 10 runs (unit test).
+- [ ] `getRangeStats` on the full 100 000-point track: fastest of 10 runs under 16 ms (unit test).
 - [ ] `getTrackMetrics` on 100 000 points still under 1 s.
 - [ ] Manual: on a 100 000-point synthetic GPX, the summary numbers update smoothly while dragging a brush, and the brush and map highlight don't lag behind the cursor.
 

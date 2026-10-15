@@ -1,5 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { BIKE_GPX, hover, RUN_GPX, stubExternalRequests } from './helpers.ts'
+import {
+  BIKE_GPX,
+  brush,
+  canvasBox,
+  hover,
+  RUN_GPX,
+  stubExternalRequests,
+  touchBrush,
+  touches,
+} from './helpers.ts'
 
 function regions(page: Page) {
   return {
@@ -30,43 +39,6 @@ async function kmAt(page: Page, chart: Locator, fraction: number): Promise<numbe
 
 /** Tooltip distances are rounded to 10 m, and a band edge may fall a point either way. */
 const KM_TOLERANCE = 0.02
-
-async function canvasBox(chart: Locator) {
-  const canvas = chart.locator('canvas').first()
-  await canvas.scrollIntoViewIfNeeded()
-  const box = await canvas.boundingBox()
-  if (!box) throw new Error('chart canvas has no box')
-  return box
-}
-
-/** Mouse drag across a chart's middle, between two fractions of its width. */
-async function brush(page: Page, chart: Locator, from: number, to: number) {
-  const box = await canvasBox(chart)
-  const y = box.y + box.height / 2
-  await page.mouse.move(box.x + box.width * from, y)
-  await page.mouse.down()
-  await page.mouse.move(box.x + box.width * to, y, { steps: 10 })
-  await page.mouse.up()
-}
-
-type TouchPoint = { x: number; y: number; id: number }
-
-/** Touch input through the Chrome DevTools Protocol; `touchPoints` lists the fingers still down. */
-async function touches(page: Page) {
-  const cdp = await page.context().newCDPSession(page)
-  return (type: 'touchStart' | 'touchMove' | 'touchEnd', points: TouchPoint[]) =>
-    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points })
-}
-
-/** One-finger drag across a chart's middle. */
-async function touchBrush(page: Page, chart: Locator, from: number, to: number) {
-  const box = await canvasBox(chart)
-  const at = (f: number) => ({ x: box.x + box.width * f, y: box.y + box.height / 2, id: 0 })
-  const send = await touches(page)
-  await send('touchStart', [at(from)])
-  for (let i = 1; i <= 10; i++) await send('touchMove', [at(from + ((to - from) * i) / 10)])
-  await send('touchEnd', [])
-}
 
 /** Two-finger spread around a chart's middle. */
 async function pinchOut(page: Page, chart: Locator) {

@@ -370,6 +370,25 @@ describe('App', () => {
       expect(clearButton()).toBeDisabled()
     })
 
+    it('brushing switches the summary to the selection stats', async () => {
+      const app = renderApp()
+      app.pick(gpxFile(run, 'run.gpx'))
+      const summary = await findSummary()
+      /** "290 m" or "1.47 km" in meters. */
+      const meters = (text: string) => parseFloat(text) * (text.endsWith(' km') ? 1000 : 1)
+      const whole = meters(details(summary).Distance)
+
+      brush(0.3, 0.6)
+      expect(within(summary).getByText(/^Selection ·/)).toBeInTheDocument()
+      expect(summary.querySelector('dl')).toHaveAccessibleName('Selection stats')
+      expect(meters(details(summary).Distance)).toBeLessThan(whole)
+
+      fireEvent.click(within(summary).getByRole('button', { name: 'Show whole track' }))
+      flushFrame()
+      expect(summary.querySelector('dl')).toHaveAccessibleName('Whole-track stats')
+      expect(details(summary).Distance).toBe('1.47 km')
+    })
+
     it('a new file clears the selection; a bad file keeps it', async () => {
       const app = renderApp()
       app.pick(gpxFile(run, 'run.gpx'))

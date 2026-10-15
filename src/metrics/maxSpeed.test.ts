@@ -7,6 +7,8 @@ import {
   getCumulativeDistance,
   getElapsedTime,
   getMaxSpeed,
+  getMaxSpeedInRange,
+  getSettleIgnored,
   getSpeedSeries,
   SETTLE_GAP_SECONDS,
   SETTLE_SECONDS,
@@ -114,5 +116,52 @@ describe('getMaxSpeed', () => {
     const [max, plain] = maxes(parseTrack(text))
     expect(max).toBe(plain)
     expect(Math.abs(max! - kmh)).toBeLessThanOrEqual(0.01)
+  })
+})
+
+describe('getMaxSpeedInRange', () => {
+  function series(track: Track) {
+    const distance = getCumulativeDistance(track)
+    const elapsed = getElapsedTime(track)
+    const speed = getSpeedSeries(track, distance, elapsed)
+    return { speed, ignored: getSettleIgnored(track, elapsed, speed) }
+  }
+  const kmh = (v: number | null) => (v === null ? null : v * 3.6)
+
+  it('the settle spike at the start stays ignored for a range starting at 0', () => {
+    const track = single(profile([...SPIKE, ...repeat(8, 120)]))
+    const { speed, ignored } = series(track)
+    expect(kmh(getMaxSpeedInRange(speed, ignored, [0, 60]))).toBeCloseTo(8, 6)
+  })
+
+  it('a range starting mid-track has no settle window of its own', () => {
+    // A real sprint at the start of the range is kept.
+    const track = single(profile([0, ...repeat(8, 120), ...repeat(16, 5), ...repeat(8, 120)]))
+    const { speed, ignored } = series(track)
+    expect(ignored.every((v) => !v)).toBe(true)
+    expect(kmh(getMaxSpeedInRange(speed, ignored, [121, 200]))).toBeCloseTo(16, 6)
+  })
+
+  it('falls back to the plain max of the range when all of it is ignored', () => {
+    const track = single(profile([...SPIKE, ...repeat(8, 120)]))
+    const { speed, ignored } = series(track)
+    expect(getMaxSpeedInRange(speed, ignored, [0, 3])).toBe(
+      Math.max(...(speed.slice(0, 4) as number[])),
+    )
+  })
+
+  it('max of [a, b] is the max of its halves', () => {
+    const { speed, ignored } = series(parseTrack(bike))
+    const whole = getMaxSpeedInRange(speed, ignored, [20, 180])!
+    const halves = [
+      getMaxSpeedInRange(speed, ignored, [20, 90])!,
+      getMaxSpeedInRange(speed, ignored, [90, 180])!,
+    ]
+    expect(whole).toBe(Math.max(...halves))
+  })
+
+  it('null without speed in range', () => {
+    const { speed, ignored } = series(parseTrack(noEleTime))
+    expect(getMaxSpeedInRange(speed, ignored, [0, 79])).toBeNull()
   })
 })

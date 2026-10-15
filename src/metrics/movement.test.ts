@@ -60,3 +60,43 @@ describe('getMovingStats', () => {
     expect(moving(parseTrack(text))!.time).toBe(time)
   })
 })
+
+describe('getMovingStats with a range', () => {
+  function movingIn(track: Track, range: [number, number]) {
+    const distance = getCumulativeDistance(track)
+    const elapsed = getElapsedTime(track)
+    const speed = getSpeedSeries(track, distance, elapsed)
+    return getMovingStats(track, distance, elapsed, speed, range)
+  }
+
+  it('counts only intervals inside the range', () => {
+    const track = { points: constantSpeedPoints(30, 3), segmentStarts: [0] }
+    const stats = movingIn(track, [5, 14])!
+    expect(stats.time).toBe(9)
+    expect(stats.distance).toBeCloseTo(27, 6)
+  })
+
+  it('a pause between segments inside the range is not counted', () => {
+    const first = constantSpeedPoints(10, 3)
+    const second = constantSpeedPoints(10, 3, 300).map((p) => ({ ...p, lat: p.lat + 0.01 }))
+    const stats = movingIn({ points: [...first, ...second], segmentStarts: [0, 10] }, [5, 14])!
+    // 5 → 9 and 10 → 14: 8 intervals of 1 s.
+    expect(stats.time).toBe(8)
+  })
+
+  it('adjacent ranges add up to the whole', () => {
+    const track = parseTrack(bike)
+    const a = movingIn(track, [0, 100])!
+    const b = movingIn(track, [100, 199])!
+    expect(a.time + b.time).toBe(517)
+  })
+
+  it('a range without time → null', () => {
+    expect(movingIn(parseTrack(noEleTime), [10, 59])).toBeNull()
+  })
+
+  it('without a range: same as the whole track', () => {
+    const track = parseTrack(run)
+    expect(movingIn(track, [0, 149])).toEqual(moving(track))
+  })
+})

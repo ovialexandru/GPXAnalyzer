@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { getAvailableFields, type AvailableFields, type TrackTotals } from '../../metrics/index.ts'
+import { getAvailableFields, type AvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import {
   formatDistance,
   formatDuration,
@@ -7,6 +7,7 @@ import {
   formatHeartRate,
   formatSpeed,
 } from '../format.ts'
+import { useDisplayedStats, useViewStore } from '../view/index.ts'
 import type { LoadedTrack } from './loadGpxFile.ts'
 import styles from './TrackSummary.module.css'
 
@@ -23,12 +24,17 @@ function orNull(value: number | null, format: (v: number) => string): string | n
 
 interface TrackSummaryProps {
   loaded: LoadedTrack
-  totals: TrackTotals
+  metrics: TrackMetrics
 }
 
-/** Track name and file name, whole-track stats, and which optional data the track has. */
-export function TrackSummary({ loaded, totals }: TrackSummaryProps) {
+/**
+ * Track name and file name, stats for the selection (or the whole track when nothing is
+ * selected), and which optional data the track has.
+ */
+export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
   const { fileName, track } = loaded
+  const store = useViewStore()
+  const { totals, selection } = useDisplayedStats(track, metrics)
   const fields = useMemo(() => getAvailableFields(track), [track])
   const badges = (Object.keys(FIELD_LABELS) as (keyof AvailableFields)[]).filter((k) => fields[k])
   // Totals that are null (no time / no elevation) are left out.
@@ -48,7 +54,26 @@ export function TrackSummary({ loaded, totals }: TrackSummaryProps) {
         <h2 className={styles.title}>{track.name || fileName}</h2>
         {track.name && <p className={styles.fileName}>{fileName}</p>}
       </div>
-      <dl className={styles.details}>
+      {selection && (
+        <div className={styles.selection}>
+          <p className={styles.selectionText}>
+            Selection · {formatDistance(metrics.distance[selection[0]])} –{' '}
+            {formatDistance(metrics.distance[selection[1]])}
+          </p>
+          <button
+            type="button"
+            className={styles.wholeTrack}
+            onClick={() => store.setSelection(null)}
+          >
+            Show whole track
+          </button>
+        </div>
+      )}
+      {/* Not aria-live: a brush drag would flood screen readers. */}
+      <dl
+        className={styles.details}
+        aria-label={selection ? 'Selection stats' : 'Whole-track stats'}
+      >
         {stats.map(
           ([label, value]) =>
             value !== null && (

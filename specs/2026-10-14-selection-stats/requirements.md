@@ -17,9 +17,11 @@ Decided with the user:
 
 ## API
 ```ts
-// src/metrics/rangeStats.ts
+// src/metrics/segments.ts
 /** Inclusive point indices [first, last]. Moved here from the UI store, which re-exports it. */
 type PointRange = [first: number, last: number]
+
+// src/metrics/rangeStats.ts (TrackTotals moves here from trackMetrics.ts, unchanged)
 
 /** Derived series, indexed like track.points (TrackMetrics minus totals). */
 interface TrackSeries {
@@ -92,21 +94,26 @@ function useDisplayedStats(track: Track, metrics: TrackMetrics): {
 | Max speed mask | Computed once on the whole track, sliced per range | A range start is not a GPS restart; recomputing per range would flag real starts of a selection as settle windows |
 | Elevation in a range | Hysteresis restarts at the range | Self-contained and simple. Not additive across ranges (see limitations) |
 | Interval rules | Only intervals with both points inside the range | Same rule family as Phase 9; adjacent ranges sharing a point add up for distance, duration and moving time |
-| Live updates | Per frame, `getRangeStats` linear in the range | 100 000 points stay under 16 ms; no prefix-sum cache needed yet |
-| `PointRange` home | `src/metrics` (UI re-exports) | Metrics can't import UI; the type belongs to the data layer |
+| Live updates | Per frame, `getRangeStats` linear in the range | 100 000 points take ~5 ms; no prefix-sum cache needed yet |
+| `PointRange` home | `src/metrics/segments.ts` (UI re-exports) | Metrics can't import UI; the type belongs to the data layer, next to `clipSegmentRanges` |
 | Files | `src/metrics/rangeStats.ts`, `useDisplayedStats` in `src/ui/view/` | Small focused modules |
+| Who calls the hook | `TrackSummary` (gets `metrics` instead of `totals`) | Only the summary re-renders while brushing; `App` stays untouched |
 
 ## Reference values
-Computed in plan task group 1 with an independent script (regex GPX parsing, brute force, not the app code) using the rules above, then recorded here before any app code changes. Ranges are inclusive point indices:
+Computed in plan task group 1 with an independent script (regex GPX parsing, brute force, not the app code) using the rules above, and recorded here before any app code changed. Its full-range values match the Phase 9 table. Ranges are inclusive point indices:
 
 | File | Range | Distance | Duration | Elev. gain | Avg speed | Max speed | Avg HR |
 |---|---|---:|---:|---:|---:|---:|---:|
-| `run.gpx` | [30, 119] | TBD | TBD | TBD | TBD | TBD | TBD |
-| `bike.gpx` | [50, 149] (spans the pause at 100) | TBD | TBD | TBD | TBD | TBD | TBD |
-| `no-ele-time.gpx` | [10, 59] | TBD | – | – | – | – | – |
-| kayak (`GpxFiles/`) | [0, 999] (contains the settle spike) | TBD | TBD | TBD | TBD | TBD | TBD |
-| bike (`GpxFiles/`) | [500, 1499] | TBD | TBD | TBD | TBD | TBD | TBD |
-| run (`GpxFiles/`) | [100, 399] | TBD | TBD | TBD | TBD | TBD | TBD |
+| `run.gpx` | [30, 119] | 844.24 m | 359 s | 3 m | 8.47 km/h | 13.60 km/h | 149.78 bpm |
+| `bike.gpx` | [50, 149] (spans the pause at 100) | 1141.70 m | 433 s | 12 m | 17.18 km/h | 33.73 km/h | 157.42 bpm |
+| `no-ele-time.gpx` | [10, 59] | 1152.26 m | – | – | – | – | – |
+| kayak (`GpxFiles/kayak_24664631302.gpx`) | [0, 999] (contains the settle spike) | 2220.22 m | 1031 s | 0 m | 7.75 km/h | 9.60 km/h | 112.22 bpm |
+| bike (`GpxFiles/bike_24025393290.gpx`) | [500, 1499] | 14700.40 m | 2877 s | 66 m | 19.15 km/h | 33.28 km/h | 148.60 bpm |
+| run (`GpxFiles/run_24545718755.gpx`) | [100, 399] | 3276.10 m | 1322 s | 3 m | 8.92 km/h | 13.70 km/h | 146.38 bpm |
+
+Shown in the summary: `run.gpx` [30, 119] "844 m", "5:59", "3 m", "8.5 km/h", "13.6 km/h", "150 bpm"; `bike.gpx` [50, 149] "1.14 km", "7:13", "12 m", "17.2 km/h", "33.7 km/h", "157 bpm".
+
+Additivity check (same script): `bike.gpx` [0, 100] + [100, 199] = 1074.65 + 1444.50 m, 478 + 239 s duration, 278 + 239 s moving time, matching the whole track (2519.15 m, 717 s, 517 s). Exact gains: `run.gpx` [30, 119] 3.0 m; `bike.gpx` [50, 149] 12.4 m.
 
 `GpxFiles/` is git-ignored: those rows are for manual checks only.
 

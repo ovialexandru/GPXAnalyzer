@@ -1,5 +1,5 @@
 import type { Track } from '../model/index.ts'
-import { getSegmentRanges } from './segments.ts'
+import { getSegmentRanges, type PointRange } from './segments.ts'
 
 /** Length of a settle window after the GPS starts or reconnects, in seconds. */
 export const SETTLE_SECONDS = 10
@@ -19,15 +19,16 @@ function median(values: number[]): number {
 }
 
 /**
- * Point indices to leave out of max speed: whole settle windows (the first SETTLE_SECONDS after
- * a segment start or a recording gap) that contain a speed spike above the reference median.
+ * Per point, whether max speed leaves it out: true inside whole settle windows (the first
+ * SETTLE_SECONDS after a segment start or a recording gap) that contain a speed spike above the
+ * reference median. Computed on the whole track, so a range start is never a settle start.
  */
-function getIgnoredSettlePoints(
+export function getSettleIgnored(
   track: Track,
   elapsed: (number | null)[],
   speed: (number | null)[],
-): Set<number> {
-  const ignored = new Set<number>()
+): boolean[] {
+  const ignored = new Array<boolean>(track.points.length).fill(false)
   for (const [start, end] of getSegmentRanges(track)) {
     const timed: number[] = []
     for (let i = start; i < end; i++) if (elapsed[i] !== null) timed.push(i)
@@ -53,10 +54,30 @@ function getIgnoredSettlePoints(
         return v !== null && v - m > SPIKE_SIGMAS * sigma
       }
       // The whole window goes: the spike's decaying tail is below the threshold but not real.
-      if (settle.some(isSpike)) for (const i of settle) ignored.add(i)
+      if (settle.some(isSpike)) for (const i of settle) ignored[i] = true
     }
   }
   return ignored
+}
+
+/**
+ * Largest speed in m/s over `range`, leaving out `settleIgnored` points. Falls back to the plain
+ * max when every speed in range is ignored; null when the range has no speed.
+ */
+export function getMaxSpeedInRange(
+  speed: (number | null)[],
+  settleIgnored: boolean[],
+  range: PointRange,
+): number | null {
+  let plain: number | null = null
+  let filtered: number | null = null
+  for (let i = Math.max(0, range[0]); i <= Math.min(range[1], speed.length - 1); i++) {
+    const v = speed[i]
+    if (v === null) continue
+    if (plain === null || v > plain) plain = v
+    if (!settleIgnored[i] && (filtered === null || v > filtered)) filtered = v
+  }
+  return filtered ?? plain
 }
 
 /**
@@ -68,13 +89,6 @@ export function getMaxSpeed(
   elapsed: (number | null)[],
   speed: (number | null)[],
 ): number | null {
-  const ignored = getIgnoredSettlePoints(track, elapsed, speed)
-  let plain: number | null = null
-  let filtered: number | null = null
-  speed.forEach((v, i) => {
-    if (v === null) return
-    if (plain === null || v > plain) plain = v
-    if (!ignored.has(i) && (filtered === null || v > filtered)) filtered = v
-  })
-  return filtered ?? plain
+  const ignored = getSettleIgnored(track, elapsed, speed)
+  return getMaxSpeedInRange(speed, ignored, [0, speed.length - 1])
 }
