@@ -5,11 +5,13 @@ const PORT = 5174
 export default defineConfig({
   testDir: 'e2e',
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // Flaky tests are fixed, never retried away (Phase 16)
+  retries: 0,
+  // On CI, also write playwright-report/ so a failed run can be inspected from its artifact
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://localhost:${PORT}`,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

@@ -22,7 +22,7 @@ Decided with the user:
 
 ## Site and base path
 - Live URL: `https://ovialexandru.github.io/GPXAnalyzer/`.
-- `vite.config.ts` sets `base: '/GPXAnalyzer/'` **for `vite build` only** (`command === 'build'`). The dev server and the existing e2e run stay at `/`.
+- `vite.config.ts` sets `base: '/GPXAnalyzer/'` **for `vite build` and `vite preview`** (`command === 'build' || isPreview`; preview runs as `serve`, so it needs the flag). The dev server and the existing e2e run stay at `/`.
 - Everything the app loads must resolve under the base path: the JS/CSS bundles, `favicon.svg` (Vite rewrites `index.html`) and `sample.gpx` (already uses `import.meta.env.BASE_URL`).
 - No client-side routes exist, so no `404.html` / SPA fallback is needed.
 
@@ -51,18 +51,23 @@ Decided with the user:
 - `playwright.smoke.config.ts`: `testMatch: 'smoke.spec.ts'`, no `webServer`, `baseURL` from `SMOKE_URL` (default: the live URL). Script: `test:smoke`.
 - OSM tiles stay stubbed on the live site too, so CI puts no load on OSM.
 
-Sample reference values (filled in during implementation): Distance `…`, Duration `…`.
+Sample reference values (`public/sample.gpx`, metric): Distance `1.47 km`, Duration `10:44`.
 
 ## Decisions
 | Decision | Choice | Reason |
 |---|---|---|
 | Host | GitHub Pages | User choice; no extra account or secrets |
-| Base path | `/GPXAnalyzer/` for build only | Pages project site lives under the repo name; dev and existing e2e stay unchanged |
+| Base path | `/GPXAnalyzer/` for build and preview | Pages project site lives under the repo name; dev and existing e2e stay unchanged |
 | Workflow shape | One workflow, `check` → `deploy` → `smoke` | Deploy can only follow a green gate; the deployed `dist/` is the one that was tested |
 | Prod e2e | Full suite against `vite preview` | Catches base-path and bundling bugs the dev server hides |
 | CI retries | `retries: 0` on CI too, trace `retain-on-failure` | Phase 16 rule: flaky failures are fixed, never retried away; the config's current `retries: 2` on CI is changed |
 | Repeat run in CI | Not run on every push | `test:e2e:repeat` stays a local gate; CI runs each suite once to keep runs short |
+| CI reporter | `github` plus `html` on CI | The `github` reporter alone writes no `playwright-report/` to upload |
+| Action versions | checkout v7, setup-node v7, cache v6, upload-artifact v7, configure-pages v6, upload-pages-artifact v5, deploy-pages v5 | Latest majors on 2026-10-15 |
 | Smoke test location | `e2e/smoke.spec.ts` + its own config | Same helpers; verified locally and on the prod build before it guards the live site |
+
+## Findings
+- The first prod-build e2e run failed every test: `vite preview` runs with `command: 'serve'`, so a build-only base served `/GPXAnalyzer/` without its bundle (404). Fixed in `vite.config.ts` with `isPreview`; the dev-server run could not have caught it. No app code changed.
 
 ## Context
 - `specs/mission.md`: private by default (no requests leave the site except map tiles), no backend, small steps.

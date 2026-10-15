@@ -3,7 +3,7 @@ import { BIKE_GPX, hover, NO_ELE_TIME_GPX, RUN_GPX, stubExternalRequests } from 
 
 test('shows the elevation profile, its tooltip and the empty state', async ({ page }) => {
   const unexpected = await stubExternalRequests(page)
-  await page.goto('/')
+  await page.goto('./')
   const input = page.locator('input[type="file"]')
   const chart = page.getByRole('region', { name: 'Elevation chart' })
 

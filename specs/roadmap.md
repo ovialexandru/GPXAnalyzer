@@ -100,8 +100,8 @@ Goal: protect the main flow.
 
 ### Phase 17 – Deploy
 Goal: public static site.
-- [ ] CI runs lint, unit, e2e, build
-- [ ] Auto-deploy to static host
+- [x] CI runs lint, unit, e2e, build
+- [x] Auto-deploy to static host
 
 ## Post-MVP
 
