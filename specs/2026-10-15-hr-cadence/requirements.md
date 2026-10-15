@@ -23,28 +23,31 @@ Decided (recommended defaults; the user asked not to be asked unless necessary):
 // src/metrics/sensors.ts
 type SensorField = 'hr' | 'cad'
 
-/**
- * Time-weighted average of a point field over `range` (default the whole track). Each sample
- * counts for the time until the next timed point of its segment inside the range; samples that
- * `include` rejects are skipped. Plain mean of the included samples when no interval exists.
- * Null when no point in range has an included sample.
- */
-function getTimeWeightedAverage(
+interface SensorStats {
+  /**
+   * Time-weighted: each included sample counts for the time until the next timed point of its
+   * segment inside the range. Plain mean of the included samples when no interval exists.
+   * Null when no sample in range is included.
+   */
+  average: number | null
+  /** Largest sample in range, included or not; null when none. */
+  max: number | null
+}
+
+/** Average and max of a point field over `range` (default the whole track), in one pass. */
+function getSensorStats(
   track: Track,
   elapsed: (number | null)[],
   field: SensorField,
   range?: PointRange,
-  include?: (value: number) => boolean,
-): number | null
+  include?: (value: number) => boolean, // which samples count towards the average
+): SensorStats
 
-/** Largest sample of a field over `range`; null when none. */
-function getFieldMax(track: Track, field: SensorField, range?: PointRange): number | null
-
-/** Average cadence while pedalling/stepping: zero samples (stopped, coasting) are left out. */
-function getAverageCadence(track: Track, elapsed: (number | null)[], range?: PointRange): number | null
+/** Cadence: the average leaves zero samples (stopped, coasting) out; the max is the largest sample. */
+function getCadenceStats(track: Track, elapsed: (number | null)[], range?: PointRange): SensorStats
 
 // src/metrics/heartRate.ts: getAverageHeartRate keeps its signature and results,
-// now a wrapper around getTimeWeightedAverage(track, elapsed, 'hr', range).
+// now getSensorStats(track, elapsed, 'hr', range).average.
 
 // src/metrics/rangeStats.ts (TrackTotals gains)
 interface TrackTotals {
@@ -98,7 +101,9 @@ type HoverSource = 'map' | 'elevation' | 'speed' | 'heartRate' | 'cadence'
 | Max HR | Plain max | No GPS-style settle problem; optical spikes are a known limitation |
 | Avg cadence zeros | Excluded | Matches Garmin/Strava; coasting on a bike would otherwise drag it down |
 | Cadence unit | "rpm", as recorded | Correct for both Garmin running (per leg) and cycling; spm conversion needs the sport |
-| Shared averaging | `getTimeWeightedAverage` | Avg HR and Avg cadence follow one rule; Phase 9 results stay identical |
+| Shared averaging | `getSensorStats` (average and max in one pass) | Avg HR and Avg cadence follow one rule; Phase 9 results stay identical. One pass per field instead of three keeps `getRangeStats` fast enough to run per frame |
+| Field reads | Named readers (`p => p.hr`, `p => p.cad`) | A keyed read (`p[field]`) of a field most points lack was ~5× slower in V8 |
+| Range-stats speed guard | 100 000 points, fastest of 10 runs after a warm-up, under 32 ms (was 16 ms in Phase 13) | ~6 ms alone, but ~17 ms while the other test workers load the CPU; the guard still catches superlinear regressions |
 | Hover sources | `'heartRate'`, `'cadence'` | Each chart must ignore only its own hover echoes |
 
 ## Reference values

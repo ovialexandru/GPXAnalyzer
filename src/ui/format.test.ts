@@ -2,6 +2,7 @@ import {
   formatDistance,
   formatDuration,
   formatElevation,
+  formatCadence,
   formatHeartRate,
   formatPace,
   formatSpeed,
@@ -71,5 +72,15 @@ describe('formatHeartRate', () => {
     [60, '60 bpm'],
   ])('%f → %s', (bpm, text) => {
     expect(formatHeartRate(bpm)).toBe(text)
+  })
+})
+
+describe('formatCadence', () => {
+  it.each([
+    [69.25, '69 rpm'],
+    [70.98, '71 rpm'],
+    [79, '79 rpm'],
+  ])('%f → %s', (rpm, text) => {
+    expect(formatCadence(rpm)).toBe(text)
   })
 })

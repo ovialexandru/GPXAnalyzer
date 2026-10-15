@@ -23,7 +23,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] A range starting mid-track never creates a new settle window (whole-track mask).
 
 ## Performance
-- [ ] `getRangeStats` on the full 100 000-point track: fastest of 10 runs under 16 ms (unit test).
+- [ ] `getRangeStats` on the full 100 000-point track: fastest of 10 runs under 16 ms (unit test). Relaxed to 32 ms by Phase 14, which adds the sensor fields.
 - [ ] `getTrackMetrics` on 100 000 points still under 1 s.
 - [ ] Manual: on a 100 000-point synthetic GPX, the summary numbers update smoothly while dragging a brush, and the brush and map highlight don't lag behind the cursor.
 

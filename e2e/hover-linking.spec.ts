@@ -34,7 +34,7 @@ async function loadRun(page: Page) {
 
 test.describe('desktop', () => {
   // The map is 60vh tall, so the page fits only when the viewport is tall enough for the rest too.
-  test.use({ viewport: { width: 1280, height: 3200 } })
+  test.use({ viewport: { width: 1280, height: 4400 } })
 
   test('chart hover moves the map marker; leaving the chart removes it', async ({ page }) => {
     const unexpected = await loadRun(page)

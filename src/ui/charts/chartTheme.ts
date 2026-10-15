@@ -10,6 +10,8 @@ export const COLORS = {
   elevation: '#0f766e',
   elevationFill: 'rgba(15, 118, 110, 0.18)',
   speed: '#1d4ed8',
+  heartRate: '#dc2626',
+  cadence: '#7c3aed',
   axisLabel: '#5b6475',
   splitLine: '#e5e9f0',
   sliderBorder: '#c3cbd8',

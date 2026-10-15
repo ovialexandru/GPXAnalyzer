@@ -3,16 +3,17 @@
 Goal: optional sensor data (see `specs/roadmap.md`, Phase 14). API, rules and reference values in `requirements.md`.
 
 ## 1. Sensor metrics
-1. Create `src/metrics/sensors.ts` with `getTimeWeightedAverage`, `getFieldMax` and `getAverageCadence`; turn `getAverageHeartRate` into a wrapper. `heartRate.test.ts` passes unchanged.
+1. Create `src/metrics/sensors.ts` with `getSensorStats` (average and max in one pass) and `getCadenceStats`; turn `getAverageHeartRate` into a wrapper. `heartRate.test.ts` passes unchanged.
 2. Add `src/metrics/sensors.test.ts`:
    - Time weighting and the plain-mean fallback for cadence; zero cadence samples skipped (also in the fallback); all zeros → `null`.
-   - `getFieldMax` over a range, with missing samples, and `null` without the field.
+   - Max over a range, with missing samples, and `null` without the field; all-zero cadence → average `null`, max 0.
    - Fixture and range values from the reference table (cadence ±0.01 rpm, max exact).
 
 ## 2. Totals
 1. `TrackTotals` gains `maxHeartRate`, `avgCadence`, `maxCadence`; `getRangeStats` fills them; the empty-track totals get `null`s.
 2. Re-export the new functions and `SensorField` from `src/metrics/index.ts`.
 3. Extend `rangeStats.test.ts` / `trackMetrics.test.ts`: reference rows, full range = totals, max of a range = max of its halves.
+4. Keep `getRangeStats` per-frame fast with the extra fields: one pass per sensor, named field reads, `timedSpan` scanning in from both ends. The 100 000-point guard warms up first and allows 32 ms (see Decisions).
 
 ## 3. Summary
 1. Add `formatCadence` to `src/ui/format.ts` with tests (69.25 → "69 rpm").
@@ -36,7 +37,7 @@ Goal: optional sensor data (see `specs/roadmap.md`, Phase 14). API, rules and re
    - `no-ele-time.gpx`: neither chart.
    - Hover on the cadence chart moves the map's hover marker; a brush on the heart rate chart highlights the map and switches the summary to the selection; zooming the heart rate chart enables Reset zoom.
    - 375 × 667 with `run.gpx`: no horizontal page scroll.
-2. Update existing specs that assume two charts or the slider on the speed chart, if any.
+2. Update existing specs that assume two charts or the slider on the speed chart: `chart-zoom.spec.ts` drags the slider under the cadence chart; `chart-zoom` and `hover-linking` use a 4400 px tall desktop viewport so the taller page still fits.
 
 ## 6. Verification
 1. Run `npm run lint`, `npm run format:check`, `npx tsc -b`, `npm test`, `npm run test:e2e`, `npm run build`.

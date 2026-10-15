@@ -31,6 +31,11 @@ export function formatHeartRate(bpm: number): string {
   return `${fixed(bpm, 0)} bpm`
 }
 
+/** Whole revolutions per minute, as recorded: "82 rpm". */
+export function formatCadence(rpm: number): string {
+  return `${fixed(rpm, 0)} rpm`
+}
+
 /** km/h with one decimal: "12.3 km/h". */
 export function formatSpeed(metersPerSecond: number): string {
   return `${fixed(metersPerSecond * 3.6, 1)} km/h`

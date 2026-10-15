@@ -3,7 +3,7 @@ import type { PointRange } from '../../metrics/index.ts'
 
 export type { PointRange }
 
-export type HoverSource = 'map' | 'elevation' | 'speed'
+export type HoverSource = 'map' | 'elevation' | 'speed' | 'heartRate' | 'cadence'
 
 export interface Hover {
   /** Point index into `track.points`. */

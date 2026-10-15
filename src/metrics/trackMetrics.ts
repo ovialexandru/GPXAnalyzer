@@ -18,6 +18,9 @@ const EMPTY_TOTALS: TrackTotals = {
   avgSpeed: null,
   maxSpeed: null,
   avgHeartRate: null,
+  maxHeartRate: null,
+  avgCadence: null,
+  maxCadence: null,
 }
 
 export function getTrackMetrics(track: Track): TrackMetrics {

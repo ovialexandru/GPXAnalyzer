@@ -83,8 +83,8 @@ Goal: stats for the selection (or whole track if none), reusing the Phase 9 stat
 
 ### Phase 14 – HR and cadence
 Goal: optional sensor data.
-- [ ] Charts shown only when data exists
-- [ ] Avg/max in stats panel
+- [x] Charts shown only when data exists
+- [x] Avg/max in stats panel
 
 ### Phase 15 – Layout and polish
 Goal: usable on desktop and mobile.

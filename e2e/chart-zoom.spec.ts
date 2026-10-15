@@ -5,6 +5,7 @@ function regions(page: Page) {
   return {
     elevation: page.getByRole('region', { name: 'Elevation chart' }),
     speed: page.getByRole('region', { name: 'Speed chart' }),
+    cadence: page.getByRole('region', { name: 'Cadence chart' }),
     reset: page.getByRole('button', { name: 'Reset zoom' }),
     xAxis: page.getByRole('group', { name: 'X axis' }),
   }
@@ -60,7 +61,7 @@ async function loadRun(page: Page) {
 
 test.describe('desktop', () => {
   // Tall enough for the whole page, so no step scrolls under the mouse.
-  test.use({ viewport: { width: 1280, height: 3200 } })
+  test.use({ viewport: { width: 1280, height: 4400 } })
 
   test('the wheel zooms both charts to the same section; Reset restores the full view', async ({
     page,
@@ -104,12 +105,13 @@ test.describe('desktop', () => {
 
   test('dragging the slider window pans both charts', async ({ page }) => {
     await loadRun(page)
-    const { elevation, speed } = regions(page)
+    const { elevation, speed, cadence } = regions(page)
     await wheelZoomIn(page, elevation)
     const before = await xAt(page, elevation, 0.1)
 
-    // The slider runs under the speed chart's plot area; its window is centred after a centre zoom.
-    const box = await canvasBox(speed)
+    // The slider runs under the last chart's plot area (cadence for run.gpx); its window is
+    // centred after a centre zoom.
+    const box = await canvasBox(cadence)
     const sliderY = box.y + box.height - 19
     const plotLeft = box.x + 64
     const plotWidth = box.width - 64 - 24

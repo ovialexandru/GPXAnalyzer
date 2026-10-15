@@ -94,6 +94,9 @@ describe('App', () => {
       ['Avg speed', '8.2 km/h'],
       ['Max speed', '13.6 km/h'],
       ['Avg HR', '144 bpm'],
+      ['Max HR', '159 bpm'],
+      ['Avg cadence', '69 rpm'],
+      ['Max cadence', '79 rpm'],
     ])
   })
 

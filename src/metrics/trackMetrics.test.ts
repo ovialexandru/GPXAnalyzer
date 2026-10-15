@@ -42,6 +42,9 @@ describe('getTrackMetrics', () => {
         avgSpeed: null,
         maxSpeed: null,
         avgHeartRate: null,
+        maxHeartRate: null,
+        avgCadence: null,
+        maxCadence: null,
       },
     })
   })

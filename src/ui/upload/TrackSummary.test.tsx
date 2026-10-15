@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { getTrackMetrics } from '../../metrics/index.ts'
 import { flushFrame, stubAnimationFrames } from '../../test/animationFrames.ts'
+import bike from '../../test/fixtures/bike.gpx?raw'
 import noEleTime from '../../test/fixtures/no-ele-time.gpx?raw'
 import run from '../../test/fixtures/run.gpx?raw'
 import { parseTrack } from '../../test/tracks.ts'
@@ -33,6 +34,9 @@ const WHOLE_RUN = {
   'Avg speed': '8.2 km/h',
   'Max speed': '13.6 km/h',
   'Avg HR': '144 bpm',
+  'Max HR': '159 bpm',
+  'Avg cadence': '69 rpm',
+  'Max cadence': '79 rpm',
 }
 
 describe('TrackSummary', () => {
@@ -57,6 +61,9 @@ describe('TrackSummary', () => {
       'Avg speed': '8.5 km/h',
       'Max speed': '13.6 km/h',
       'Avg HR': '150 bpm',
+      'Max HR': '159 bpm',
+      'Avg cadence': '71 rpm',
+      'Max cadence': '77 rpm',
     })
     const metrics = getTrackMetrics(parseTrack(run))
     const from = metrics.distance[30]
@@ -76,6 +83,14 @@ describe('TrackSummary', () => {
     expect(store.getState().selection).toBeNull()
     expect(stats('Whole-track stats')).toEqual(WHOLE_RUN)
     expect(screen.queryByText(/^Selection ·/)).not.toBeInTheDocument()
+  })
+
+  it('bike.gpx: Max HR but no cadence stats', () => {
+    renderSummary(bike, 'bike.gpx')
+    const s = stats('Whole-track stats')
+    expect(s['Max HR']).toBe('166 bpm')
+    expect(s).not.toHaveProperty('Avg cadence')
+    expect(s).not.toHaveProperty('Max cadence')
   })
 
   it('a selection on a track without time or elevation shows only the distance', () => {

@@ -1,9 +1,9 @@
 import type { Track } from '../model/index.ts'
 import { getElevationChange } from './elevation.ts'
-import { getAverageHeartRate } from './heartRate.ts'
 import { getMaxSpeedInRange } from './maxSpeed.ts'
 import { getMovingStats } from './movement.ts'
 import type { PointRange } from './segments.ts'
+import { getCadenceStats, getSensorStats } from './sensors.ts'
 
 export interface TrackTotals {
   /** Meters. */
@@ -22,6 +22,12 @@ export interface TrackTotals {
   maxSpeed: number | null
   /** bpm, time-weighted. */
   avgHeartRate: number | null
+  /** bpm, largest sample. */
+  maxHeartRate: number | null
+  /** As recorded (rpm), time-weighted, zero samples left out. */
+  avgCadence: number | null
+  /** As recorded (rpm), largest sample. */
+  maxCadence: number | null
 }
 
 /** Derived series, all indexed like `track.points`. */
@@ -38,17 +44,14 @@ export interface TrackSeries {
   settleIgnored: boolean[]
 }
 
-/** First and last timed points in range, as elapsed seconds; null when none is timed. */
+/** Elapsed time from the first to the last timed point in range; null when none is timed. */
 function timedSpan(elapsed: (number | null)[], [first, last]: PointRange): number | null {
-  let start: number | null = null
-  let end: number | null = null
-  for (let i = first; i <= last; i++) {
-    const t = elapsed[i]
-    if (t === null) continue
-    start ??= t
-    end = t
-  }
-  return start === null || end === null ? null : end - start
+  let a = first
+  while (a <= last && elapsed[a] === null) a++
+  if (a > last) return null
+  let b = last
+  while (elapsed[b] === null) b--
+  return (elapsed[b] as number) - (elapsed[a] as number)
 }
 
 /** Totals for points first..last (inclusive). The whole track is [0, n - 1]. */
@@ -57,6 +60,8 @@ export function getRangeStats(track: Track, series: TrackSeries, range: PointRan
   const [first, last] = range
   const elevation = getElevationChange(track, undefined, range)
   const moving = getMovingStats(track, distance, elapsed, speed, range)
+  const hr = getSensorStats(track, elapsed, 'hr', range)
+  const cad = getCadenceStats(track, elapsed, range)
   return {
     distance: distance[last] - distance[first],
     duration: timedSpan(elapsed, range),
@@ -65,6 +70,9 @@ export function getRangeStats(track: Track, series: TrackSeries, range: PointRan
     movingTime: moving?.time ?? null,
     avgSpeed: moving && moving.time > 0 ? moving.distance / moving.time : null,
     maxSpeed: getMaxSpeedInRange(speed, settleIgnored, range),
-    avgHeartRate: getAverageHeartRate(track, elapsed, range),
+    avgHeartRate: hr.average,
+    maxHeartRate: hr.max,
+    avgCadence: cad.average,
+    maxCadence: cad.max,
   }
 }

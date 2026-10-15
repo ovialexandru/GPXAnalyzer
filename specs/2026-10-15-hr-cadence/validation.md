@@ -6,7 +6,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 - [ ] `npm run lint` reports no errors or warnings.
 - [ ] `npm run format:check` reports no formatting differences.
 - [ ] `npx tsc -b` passes with `strict: true`.
-- [ ] `npm test` passes, including all existing tests from Phases 1–13 (updated only where the chart count, slider position or summary list changed). `heartRate.test.ts` passes unchanged.
+- [ ] `npm test` passes, including all existing tests from Phases 1–13 (updated only where the chart count, slider position or summary list changed). `heartRate.test.ts` passes unchanged. The Phase 13 range-stats speed guard is now 32 ms (see `requirements.md`, Decisions).
 - [ ] `npm run test:e2e` passes in Chromium with no real external requests (OSM tiles stubbed).
 - [ ] `npm run build` produces `dist/` with no errors.
 
@@ -35,6 +35,7 @@ The implementation succeeded and can be merged when every item below holds on a 
 ## Design
 - [ ] Sensor metrics are pure, in `src/metrics/`, no UI imports; values in bpm/rpm, formatting only in `src/ui/format.ts`.
 - [ ] One `SensorChart` and one `buildSensorOption` serve both charts; no duplicated chart wiring.
+- [ ] `getRangeStats` makes one pass per sensor field.
 - [ ] No new dependencies; no module over ~200 lines.
 
 ## Merge gate

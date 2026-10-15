@@ -2,3 +2,4 @@
 export { ChartsPanel } from './ChartsPanel.tsx'
 export { ElevationChart } from './ElevationChart.tsx'
 export { SpeedChart } from './SpeedChart.tsx'
+export { SensorChart } from './SensorChart.tsx'

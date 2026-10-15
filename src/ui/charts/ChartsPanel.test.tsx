@@ -3,7 +3,6 @@ import { getTrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { flushFrame, stubAnimationFrames } from '../../test/animationFrames.ts'
 import {
-  charts,
   init,
   lastOption,
   liveCharts,
@@ -48,9 +47,27 @@ function xAxisRadio(name: 'Distance' | 'Time') {
   return within(screen.getByRole('group', { name: 'X axis' })).getByRole('radio', { name })
 }
 
-/** The x-axis option of each live chart (elevation first, then speed). */
+/** The x-axis option of each live chart. */
 function xAxes() {
   return liveCharts().map((c) => lastOption(c).xAxis)
+}
+
+/** The live chart inside the region with this accessible name. */
+function chartIn(name: string): FakeChart {
+  const region = screen.getByRole('region', { name })
+  const chart = liveCharts().find((c) => region.contains(c.node))
+  if (!chart) throw new Error(`no chart in ${name}`)
+  return chart
+}
+
+const CHART_REGIONS = ['Elevation chart', 'Speed chart', 'Heart rate chart', 'Cadence chart']
+
+/** Accessible names of the chart regions, in page order. */
+function chartRegions(): string[] {
+  return screen
+    .getAllByRole('region')
+    .map((r) => r.getAttribute('aria-label') ?? '')
+    .filter((name) => CHART_REGIONS.includes(name))
 }
 
 beforeEach(() => {
@@ -59,12 +76,21 @@ beforeEach(() => {
 })
 
 describe('ChartsPanel', () => {
-  it('renders the toggle, the elevation chart and the speed chart', () => {
+  it('run.gpx: the toggle and four charts, heart rate and cadence after speed', () => {
     render(panelFor(run))
     expect(screen.getByRole('group', { name: 'X axis' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Elevation chart' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Speed chart' })).toBeInTheDocument()
-    expect(init).toHaveBeenCalledTimes(2)
+    expect(chartRegions()).toEqual(CHART_REGIONS)
+    expect(init).toHaveBeenCalledTimes(4)
+  })
+
+  it('bike.gpx (HR, no cadence): no cadence card', () => {
+    render(panelFor(bike))
+    expect(chartRegions()).toEqual(['Elevation chart', 'Speed chart', 'Heart rate chart'])
+  })
+
+  it('no-ele-time.gpx: no heart rate or cadence card', () => {
+    render(panelFor(noEleTime))
+    expect(chartRegions()).toEqual(['Elevation chart', 'Speed chart'])
   })
 
   it('defaults to Distance; choosing Time switches both charts', () => {
@@ -74,10 +100,8 @@ describe('ChartsPanel', () => {
 
     fireEvent.click(xAxisRadio('Time'))
     expect(xAxisRadio('Time')).toBeChecked()
-    expect(xAxes()).toEqual([
-      expect.objectContaining({ max: 644, interval: 120 }),
-      expect.objectContaining({ max: 644, interval: 120 }),
-    ])
+    expect(xAxes()).toHaveLength(4)
+    for (const axis of xAxes()) expect(axis).toMatchObject({ max: 644, interval: 120 })
 
     fireEvent.click(xAxisRadio('Distance'))
     for (const axis of xAxes()) expect(axis.max).toBeCloseTo(1.469, 3)
@@ -103,19 +127,17 @@ describe('ChartsPanel', () => {
 
     rerender(panelFor(bike))
     expect(xAxisRadio('Time')).toBeChecked()
-    expect(xAxes()).toEqual([
-      expect.objectContaining({ max: 717 }),
-      expect.objectContaining({ max: 717 }),
-    ])
+    expect(xAxes()).toHaveLength(3)
+    for (const axis of xAxes()) expect(axis).toMatchObject({ max: 717 })
   })
 
-  it('another track keeps both chart instances and the Pace choice', () => {
+  it('another track keeps the chart instances and the Pace choice; cadence goes away', () => {
     const { rerender } = render(panelFor(run))
     const speed = screen.getByRole('region', { name: 'Speed chart' })
     fireEvent.click(within(speed).getByRole('radio', { name: 'Pace' }))
     rerender(panelFor(bike))
-    expect(init).toHaveBeenCalledTimes(2)
-    expect(liveCharts()).toHaveLength(2)
+    expect(init).toHaveBeenCalledTimes(4)
+    expect(liveCharts()).toHaveLength(3)
     expect(within(speed).getByRole('radio', { name: 'Pace' })).toBeChecked()
   })
 
@@ -133,18 +155,40 @@ describe('ChartsPanel', () => {
     expect(resetButton()).toBeDisabled()
   })
 
-  it('the slider is under the speed chart when it has data', () => {
+  it('run.gpx: the slider is only under the cadence chart', () => {
     render(panelFor(run))
-    const [elevation, speed] = charts
-    expect(zoomTypes(elevation)).toEqual(['inside'])
-    expect(zoomTypes(speed)).toEqual(['inside', 'slider'])
+    for (const name of ['Elevation chart', 'Speed chart', 'Heart rate chart']) {
+      expect(zoomTypes(chartIn(name))).toEqual(['inside'])
+    }
+    expect(zoomTypes(chartIn('Cadence chart'))).toEqual(['inside', 'slider'])
     const height = (chart: FakeChart) => parseFloat(chart.node.style.height)
-    expect(height(speed)).toBeGreaterThan(height(elevation))
+    expect(height(chartIn('Cadence chart'))).toBeGreaterThan(height(chartIn('Speed chart')))
+  })
+
+  it('bike.gpx: the slider is under the heart rate chart', () => {
+    render(panelFor(bike))
+    expect(zoomTypes(chartIn('Speed chart'))).toEqual(['inside'])
+    expect(zoomTypes(chartIn('Heart rate chart'))).toEqual(['inside', 'slider'])
+  })
+
+  it('without sensors, the slider is under the speed chart', () => {
+    const track = parseTrack(run)
+    for (const p of track.points) {
+      delete p.hr
+      delete p.cad
+    }
+    render(panelForTrack(track))
+    expect(zoomTypes(chartIn('Elevation chart'))).toEqual(['inside'])
+    expect(zoomTypes(chartIn('Speed chart'))).toEqual(['inside', 'slider'])
   })
 
   it('the slider moves to the elevation chart when the speed chart is empty', () => {
     const track = parseTrack(run)
-    for (const p of track.points) delete p.time
+    for (const p of track.points) {
+      delete p.time
+      delete p.hr
+      delete p.cad
+    }
     render(panelForTrack(track))
     expect(liveCharts()).toHaveLength(1)
     expect(zoomTypes(liveCharts()[0])).toEqual(['inside', 'slider'])

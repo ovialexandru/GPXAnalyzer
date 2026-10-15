@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { getAvailableFields, type AvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import {
+  formatCadence,
   formatDistance,
   formatDuration,
   formatElevation,
@@ -45,6 +46,9 @@ export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
     ['Avg speed', orNull(totals.avgSpeed, formatSpeed)],
     ['Max speed', orNull(totals.maxSpeed, formatSpeed)],
     ['Avg HR', orNull(totals.avgHeartRate, formatHeartRate)],
+    ['Max HR', orNull(totals.maxHeartRate, formatHeartRate)],
+    ['Avg cadence', orNull(totals.avgCadence, formatCadence)],
+    ['Max cadence', orNull(totals.maxCadence, formatCadence)],
   ]
 
   return (
