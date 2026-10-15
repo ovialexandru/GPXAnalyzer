@@ -4,4 +4,6 @@ import { afterEach } from 'vitest'
 
 afterEach(() => {
   cleanup()
+  // Remembered choices (units, collapsed charts) must not leak between tests.
+  localStorage.clear()
 })

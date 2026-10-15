@@ -19,32 +19,45 @@ interface SensorChartProps {
   kind: SensorKind
   /** Show the zoom slider under this chart. */
   withSlider?: boolean
+  /** Only the heading is shown; no chart is created. */
+  collapsed?: boolean
+  onToggleCollapsed?: () => void
 }
 
 /** Heart rate or cadence chart. The panel renders it only when the track has that data. */
-export function SensorChart({ track, metrics, mode, kind, withSlider = false }: SensorChartProps) {
+export function SensorChart({
+  track,
+  metrics,
+  mode,
+  kind,
+  withSlider = false,
+  collapsed = false,
+  onToggleCollapsed,
+}: SensorChartProps) {
   const [units] = useUnits()
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => buildSensorOption(track, metrics, mode, kind, withSlider, units),
-    [track, metrics, mode, kind, withSlider, units],
+    () => (collapsed ? null : buildSensorOption(track, metrics, mode, kind, withSlider, units)),
+    [collapsed, track, metrics, mode, kind, withSlider, units],
   )
 
   useEffect(() => {
-    if (!chart) return
+    if (!chart || !built) return
     chart.setOption(built.option, { notMerge: true })
   }, [chart, built])
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
-  useChartZoom(chart, built.line, metrics, mode, units)
-  useChartBrush(chart, built.line, metrics, mode, units)
-  useChartHover(chart, kind, built.line, metrics, mode, units)
+  useChartZoom(chart, built?.line ?? null, metrics, mode, units)
+  useChartBrush(chart, built?.line ?? null, metrics, mode, units)
+  useChartHover(chart, kind, built?.line ?? null, metrics, mode, units)
 
   return (
     <ChartCard
       label={`${HEADINGS[kind]} chart`}
       heading={HEADINGS[kind]}
       withSlider={withSlider}
+      collapsed={collapsed}
+      onToggleCollapsed={onToggleCollapsed}
       containerRef={containerRef}
     />
   )

@@ -16,16 +16,29 @@ interface ElevationChartProps {
   mode: XAxisMode
   /** Show the zoom slider under this chart. */
   withSlider?: boolean
+  /** Only the heading is shown; no chart is created. */
+  collapsed?: boolean
+  onToggleCollapsed?: () => void
 }
 
 /** Elevation profile, or an empty state when the track has no elevation. */
-export function ElevationChart({ track, metrics, mode, withSlider = false }: ElevationChartProps) {
+export function ElevationChart({
+  track,
+  metrics,
+  mode,
+  withSlider = false,
+  collapsed = false,
+  onToggleCollapsed,
+}: ElevationChartProps) {
   const hasElevation = useMemo(() => getAvailableFields(track).ele, [track])
   const [units] = useUnits()
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => (hasElevation ? buildElevationOption(track, metrics, mode, withSlider, units) : null),
-    [hasElevation, track, metrics, mode, withSlider, units],
+    () =>
+      hasElevation && !collapsed
+        ? buildElevationOption(track, metrics, mode, withSlider, units)
+        : null,
+    [hasElevation, collapsed, track, metrics, mode, withSlider, units],
   )
 
   // Same chart across tracks and modes: replace the whole option.
@@ -45,6 +58,8 @@ export function ElevationChart({ track, metrics, mode, withSlider = false }: Ele
       heading="Elevation"
       emptyMessage={hasElevation ? undefined : 'This track has no elevation data.'}
       withSlider={withSlider}
+      collapsed={collapsed}
+      onToggleCollapsed={onToggleCollapsed}
       containerRef={containerRef}
     />
   )

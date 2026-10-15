@@ -22,17 +22,30 @@ interface SpeedChartProps {
   mode: XAxisMode
   /** Show the zoom slider under this chart. */
   withSlider?: boolean
+  /** Only the heading is shown; no chart is created. */
+  collapsed?: boolean
+  onToggleCollapsed?: () => void
 }
 
 /** Speed or pace chart with its own switch, or an empty state when the track has no timestamps. */
-export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedChartProps) {
+export function SpeedChart({
+  track,
+  metrics,
+  mode,
+  withSlider = false,
+  collapsed = false,
+  onToggleCollapsed,
+}: SpeedChartProps) {
   const [metric, setMetric] = useState<SpeedMetric>('speed')
   const hasTime = useMemo(() => getAvailableFields(track).time, [track])
   const [units] = useUnits()
   const { containerRef, chart } = useECharts()
   const built = useMemo(
-    () => (hasTime ? buildSpeedOption(track, metrics, mode, metric, withSlider, units) : null),
-    [hasTime, track, metrics, mode, metric, withSlider, units],
+    () =>
+      hasTime && !collapsed
+        ? buildSpeedOption(track, metrics, mode, metric, withSlider, units)
+        : null,
+    [hasTime, collapsed, track, metrics, mode, metric, withSlider, units],
   )
 
   useEffect(() => {
@@ -63,6 +76,8 @@ export function SpeedChart({ track, metrics, mode, withSlider = false }: SpeedCh
         hasTime ? undefined : "This track has no timestamps, so speed and pace can't be shown."
       }
       withSlider={withSlider}
+      collapsed={collapsed}
+      onToggleCollapsed={onToggleCollapsed}
       containerRef={containerRef}
     />
   )

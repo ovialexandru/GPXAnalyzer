@@ -123,3 +123,11 @@ const GESTURE_SLOP = 10 // px of finger travel that decides scroll vs brush
 ## Known limitations
 - A diagonal swipe on a chart is decided by its first ~10 px; a mostly horizontal start brushes even if the finger then goes vertical.
 - Hybrid devices whose primary pointer is fine (touch laptops) keep one-finger map dragging on the touch screen.
+
+## Amendment A – Chart order and collapsing
+Added 2026-10-15 on branch `2026-10-15-chart-order-collapse`, at the user's request after Phase 15 was merged.
+
+- **Order:** Speed/Pace, Elevation, Heart rate, Cadence (elevation moves under speed). Phase 14's rule "slider under the last chart shown" now reads: under the last **expanded** chart with data (cadence, heart rate, elevation, speed).
+- **Collapsing:** every chart card's heading is a disclosure button (`aria-expanded`, chevron, 44 px tall). A collapsed card shows only its heading: the chart is disposed (no rendering cost), the Speed/Pace switch is hidden, and empty-state cards collapse too. Expanding creates the chart again and it picks up the current zoom, selection and hover from the view store.
+- **Remembered:** the set of collapsed charts is kept in `localStorage` (`gpx-analyzer.collapsedCharts`), for the next track and visit; invalid or blocked storage means nothing collapsed.
+- Code: `src/ui/charts/collapsedCharts.ts` (`CHART_KINDS`, `useCollapsedCharts`), `ChartCard` (`collapsed`, `onToggleCollapsed`), the chart components pass them through, `ChartsPanel` holds the state. Tests: `collapsedCharts.test.ts`, `ChartsPanel.test.tsx` ("ChartsPanel collapsing"), `e2e/chart-collapse.spec.ts`. The test setup clears `localStorage` after every test.

@@ -60,7 +60,7 @@ function chartIn(name: string): FakeChart {
   return chart
 }
 
-const CHART_REGIONS = ['Elevation chart', 'Speed chart', 'Heart rate chart', 'Cadence chart']
+const CHART_REGIONS = ['Speed chart', 'Elevation chart', 'Heart rate chart', 'Cadence chart']
 
 /** Accessible names of the chart regions, in page order. */
 function chartRegions(): string[] {
@@ -76,7 +76,7 @@ beforeEach(() => {
 })
 
 describe('ChartsPanel', () => {
-  it('run.gpx: the toggle and four charts, heart rate and cadence after speed', () => {
+  it('run.gpx: the toggle and four charts: speed, elevation, heart rate, cadence', () => {
     render(panelFor(run))
     expect(screen.getByRole('group', { name: 'X axis' })).toBeInTheDocument()
     expect(chartRegions()).toEqual(CHART_REGIONS)
@@ -85,12 +85,12 @@ describe('ChartsPanel', () => {
 
   it('bike.gpx (HR, no cadence): no cadence card', () => {
     render(panelFor(bike))
-    expect(chartRegions()).toEqual(['Elevation chart', 'Speed chart', 'Heart rate chart'])
+    expect(chartRegions()).toEqual(['Speed chart', 'Elevation chart', 'Heart rate chart'])
   })
 
   it('no-ele-time.gpx: no heart rate or cadence card', () => {
     render(panelFor(noEleTime))
-    expect(chartRegions()).toEqual(['Elevation chart', 'Speed chart'])
+    expect(chartRegions()).toEqual(['Speed chart', 'Elevation chart'])
   })
 
   it('defaults to Distance; choosing Time switches both charts', () => {
@@ -171,14 +171,26 @@ describe('ChartsPanel', () => {
     expect(zoomTypes(chartIn('Heart rate chart'))).toEqual(['inside', 'slider'])
   })
 
-  it('without sensors, the slider is under the speed chart', () => {
+  it('without sensors, the slider is under the elevation chart', () => {
     const track = parseTrack(run)
     for (const p of track.points) {
       delete p.hr
       delete p.cad
     }
     render(panelForTrack(track))
-    expect(zoomTypes(chartIn('Elevation chart'))).toEqual(['inside'])
+    expect(zoomTypes(chartIn('Speed chart'))).toEqual(['inside'])
+    expect(zoomTypes(chartIn('Elevation chart'))).toEqual(['inside', 'slider'])
+  })
+
+  it('without sensors or elevation, the slider is under the speed chart', () => {
+    const track = parseTrack(run)
+    for (const p of track.points) {
+      delete p.hr
+      delete p.cad
+      delete p.ele
+    }
+    render(panelForTrack(track))
+    expect(liveCharts()).toHaveLength(1)
     expect(zoomTypes(chartIn('Speed chart'))).toEqual(['inside', 'slider'])
   })
 
@@ -285,5 +297,73 @@ describe('ChartsPanel selection actions', () => {
     expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function))
     add.mockRestore()
     remove.mockRestore()
+  })
+})
+
+describe('ChartsPanel collapsing', () => {
+  function toggle(name: string) {
+    const region = screen.getByRole('region', { name: `${name} chart` })
+    return within(region).getByRole('button', { name })
+  }
+
+  it('every chart starts expanded with a toggle in its heading', () => {
+    render(panelFor(run))
+    for (const name of ['Speed', 'Elevation', 'Heart rate', 'Cadence']) {
+      expect(toggle(name)).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('heading', { name })).toContainElement(toggle(name))
+    }
+  })
+
+  it('collapsing disposes the chart and hides its controls; expanding brings it back', () => {
+    render(panelFor(run))
+    const speed = screen.getByRole('region', { name: 'Speed chart' })
+    fireEvent.click(toggle('Speed'))
+    expect(toggle('Speed')).toHaveAttribute('aria-expanded', 'false')
+    expect(liveCharts()).toHaveLength(3)
+    expect(within(speed).queryByRole('radio', { name: 'Pace' })).not.toBeInTheDocument()
+
+    fireEvent.click(toggle('Speed'))
+    expect(toggle('Speed')).toHaveAttribute('aria-expanded', 'true')
+    expect(liveCharts()).toHaveLength(4)
+    expect(speed).toContainElement(liveCharts().at(-1)!.node)
+  })
+
+  it('a collapsed chart gets the zoom and selection back when expanded', () => {
+    const { store } = render(panelFor(run), { pointCount: 150 })
+    fireEvent.click(toggle('Elevation'))
+    store.setZoom([20, 60])
+    store.setSelection([30, 50])
+    flushFrame()
+    fireEvent.click(toggle('Elevation'))
+    const elevation = chartIn('Elevation chart')
+    const types = elevation.dispatchAction.mock.calls.map(([p]) => p.type)
+    expect(types).toContain('dataZoom')
+    expect(types).toContain('brush')
+  })
+
+  it('the slider moves to the last expanded chart with data', () => {
+    render(panelFor(run))
+    fireEvent.click(toggle('Cadence'))
+    expect(zoomTypes(chartIn('Heart rate chart'))).toEqual(['inside', 'slider'])
+    fireEvent.click(toggle('Heart rate'))
+    fireEvent.click(toggle('Elevation'))
+    expect(zoomTypes(chartIn('Speed chart'))).toEqual(['inside', 'slider'])
+  })
+
+  it('the collapsed charts are remembered for the next track and visit', () => {
+    const { rerender, unmount } = render(panelFor(run))
+    fireEvent.click(toggle('Heart rate'))
+    rerender(panelFor(bike))
+    expect(toggle('Heart rate')).toHaveAttribute('aria-expanded', 'false')
+    unmount()
+    render(panelFor(run))
+    expect(toggle('Heart rate')).toHaveAttribute('aria-expanded', 'false')
+    expect(toggle('Speed')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('an empty chart (no elevation) collapses too', () => {
+    render(panelFor(noEleTime))
+    fireEvent.click(toggle('Elevation'))
+    expect(screen.queryByText('This track has no elevation data.')).not.toBeInTheDocument()
   })
 })
