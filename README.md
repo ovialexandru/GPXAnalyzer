@@ -12,16 +12,18 @@ npm install
 
 ## Scripts
 
-| Script                 | Description                                    |
-| ---------------------- | ---------------------------------------------- |
-| `npm run dev`          | Start the Vite dev server                      |
-| `npm run build`        | Type-check and build the static app to `dist/` |
-| `npm run preview`      | Serve the built `dist/` locally                |
-| `npm run lint`         | Run ESLint (fails on any warning)              |
-| `npm run format`       | Format all files with Prettier                 |
-| `npm run format:check` | Check formatting without writing               |
-| `npm test`             | Run unit tests once (Vitest, jsdom)            |
-| `npm run test:watch`   | Run unit tests in watch mode                   |
+| Script                    | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `npm run dev`             | Start the Vite dev server                               |
+| `npm run build`           | Type-check and build the static app to `dist/`          |
+| `npm run preview`         | Serve the built `dist/` locally                         |
+| `npm run lint`            | Run ESLint (fails on any warning)                       |
+| `npm run format`          | Format all files with Prettier                          |
+| `npm run format:check`    | Check formatting without writing                        |
+| `npm test`                | Run unit tests once (Vitest, jsdom)                     |
+| `npm run test:watch`      | Run unit tests in watch mode                            |
+| `npm run test:e2e`        | Run the Playwright end-to-end tests (Chromium)          |
+| `npm run test:e2e:repeat` | Run every end-to-end test 3 times, to catch flaky tests |
 
 ## Project layout
 

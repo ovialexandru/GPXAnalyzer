@@ -51,7 +51,7 @@ A mouse drag selects by pixels, so the exact point range differs slightly betwee
 ## Shared helpers (`e2e/helpers.ts`)
 Moved from the specs, same behavior:
 - `trackPage(page)`: locators for the summary, stats `dl`, selection line, map, map highlight, hover marker, each chart region by name, the toolbar buttons and the Units / X axis groups.
-- `loadTrack(page, file)`: stubs external requests, collects console errors and warnings, opens `/`, picks the file, waits for the charts; returns `{ unexpected, consoleErrors }`.
+- `loadTrack(page, file)`: stubs external requests, collects console errors and warnings, opens `/`, picks the file, waits for the charts; returns `{ unexpected, consoleErrors }`. It is `openPage(page)` (the first three, so the main flow can check the empty state with collection already running) followed by `pickFile(page, file)` (picks the file, waits for its name in the summary and the speed chart or its empty state; also used after a reload or for a second file).
 - `summaryStat(page, label)`, `tooltipAt(page, chart, fraction)`, `xAt(page, chart, fraction)` (tooltip x in km, m or s), `meters(text)`, `seconds(text)`, `horizontalOverflow(page)`, `wheelZoomIn(page, chart)`, and the `TOOLTIP` / `KM_TOLERANCE` constants.
 - Specs keep local helpers that only they use (e.g. `smallTargets`, `pinchOut`, `mapView`).
 
@@ -64,6 +64,9 @@ Moved from the specs, same behavior:
 | Helpers | One `helpers.ts` | 7 copies of `regions()`, 6 of `load()`, 3 of `stat()` today |
 | Flake gate | `--repeat-each=3`, zero failures | User choice; `npm run test:e2e:repeat` for local use and Phase 17 CI |
 | File name | `e2e/main-flow.spec.ts` | Says what it protects |
+
+## Findings
+The main flow found no app bugs; no app code was changed. Breaking a link on purpose fails the test at the matching step: no `store.setSelection` in `useChartBrush` → Select; "Zoom to selection" resetting the zoom instead → Zoom to selection; Esc not clearing → Clear.
 
 ## Context
 - `specs/mission.md`: private (no external requests), linked views, mobile-friendly, small steps.

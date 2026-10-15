@@ -1,14 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { hover, RUN_GPX, stubExternalRequests } from './helpers.ts'
-
-function regions(page: Page) {
-  return {
-    map: page.getByRole('region', { name: 'Track map' }),
-    elevation: page.getByRole('region', { name: 'Elevation chart' }),
-    speed: page.getByRole('region', { name: 'Speed chart' }),
-    marker: page.locator('[data-hover-marker]'),
-  }
-}
+import { horizontalOverflow, hover, loadTrack, TOOLTIP, trackPage } from './helpers.ts'
 
 async function center(locator: Locator) {
   const box = await locator.boundingBox()
@@ -16,20 +7,14 @@ async function center(locator: Locator) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
-/** Chart tooltips read "<x> · <y>", e.g. "1.23 km · 245 m". */
-const TOOLTIP = / · /
-
 /** Loads run.gpx and checks the whole page fits the viewport, so no step scrolls under the mouse. */
 async function loadRun(page: Page) {
-  const unexpected = await stubExternalRequests(page)
-  await page.goto('/')
-  await page.locator('input[type="file"]').setInputFiles(RUN_GPX)
-  await expect(regions(page).speed.locator('canvas')).toHaveCount(1)
+  const loaded = await loadTrack(page)
   const overflow = await page
     .locator('html')
     .evaluate((html) => html.scrollHeight - html.clientHeight)
   expect(overflow, 'page must fit the viewport').toBeLessThanOrEqual(0)
-  return unexpected
+  return loaded
 }
 
 test.describe('desktop', () => {
@@ -37,8 +22,8 @@ test.describe('desktop', () => {
   test.use({ viewport: { width: 1280, height: 4400 } })
 
   test('chart hover moves the map marker; leaving the chart removes it', async ({ page }) => {
-    const unexpected = await loadRun(page)
-    const { elevation, marker } = regions(page)
+    const { unexpected } = await loadRun(page)
+    const { elevation, marker } = trackPage(page)
     await expect(marker).toHaveCount(0)
 
     await hover(page, elevation, 0.25)
@@ -57,8 +42,8 @@ test.describe('desktop', () => {
   test('map hover shows the marker and both chart pointers, without a tooltip', async ({
     page,
   }) => {
-    const unexpected = await loadRun(page)
-    const { map, elevation, speed, marker } = regions(page)
+    const { unexpected } = await loadRun(page)
+    const { map, elevation, speed, marker } = trackPage(page)
 
     // Find a spot on the track: where the marker sits for a chart hover.
     await hover(page, elevation, 0.4)
@@ -95,7 +80,7 @@ test.describe('desktop', () => {
 
   test('only the hovered chart shows its tooltip', async ({ page }) => {
     await loadRun(page)
-    const { elevation, speed } = regions(page)
+    const { elevation, speed } = trackPage(page)
 
     await hover(page, elevation, 0.5)
     await expect(elevation.getByText(TOOLTIP)).toBeVisible()
@@ -103,8 +88,8 @@ test.describe('desktop', () => {
   })
 
   test('the speed chart links too, on both the Distance and Time axes', async ({ page }) => {
-    const unexpected = await loadRun(page)
-    const { elevation, speed, marker } = regions(page)
+    const { unexpected } = await loadRun(page)
+    const { elevation, speed, marker, xAxis } = trackPage(page)
 
     await hover(page, speed, 0.3)
     await expect(marker).toBeVisible()
@@ -112,7 +97,7 @@ test.describe('desktop', () => {
     await hover(page, speed, 0.7)
     await expect.poll(async () => (await center(marker)).x).not.toBeCloseTo(distanceSpot.x, 0)
 
-    await page.getByRole('group', { name: 'X axis' }).getByRole('radio', { name: 'Time' }).check()
+    await xAxis.getByRole('radio', { name: 'Time' }).check()
     await hover(page, speed, 0.3)
     await expect(marker).toBeVisible()
     const timeSpot = await center(marker)
@@ -127,23 +112,16 @@ test.describe('phone', () => {
   test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
 
   test('a tap on a chart shows the marker; no horizontal scroll', async ({ page }) => {
-    const unexpected = await stubExternalRequests(page)
-    await page.goto('/')
-    await page.locator('input[type="file"]').setInputFiles(RUN_GPX)
-    const { elevation, marker } = regions(page)
+    const { unexpected } = await loadTrack(page)
+    const { elevation, marker } = trackPage(page)
     const canvas = elevation.locator('canvas').first()
-    await expect(canvas).toBeVisible()
     await canvas.scrollIntoViewIfNeeded()
 
     const box = await canvas.boundingBox()
     if (!box) throw new Error('chart canvas has no box')
     await canvas.tap({ position: { x: box.width * 0.5, y: box.height / 2 } })
     await expect(marker).toBeVisible()
-
-    const overflow = await page
-      .locator('html')
-      .evaluate((html) => html.scrollWidth - html.clientWidth)
-    expect(overflow).toBeLessThanOrEqual(0)
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
 
     expect(unexpected).toEqual([])
   })

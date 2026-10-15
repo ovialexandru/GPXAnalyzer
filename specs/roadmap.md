@@ -96,7 +96,7 @@ Goal: usable on desktop and mobile.
 
 ### Phase 16 – E2E tests
 Goal: protect the main flow.
-- [ ] Playwright: upload -> hover -> zoom -> select -> stats visible
+- [x] Playwright: upload -> hover -> zoom -> select -> stats visible
 
 ### Phase 17 – Deploy
 Goal: public static site.

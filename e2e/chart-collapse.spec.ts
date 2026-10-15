@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { brush, RUN_GPX, stubExternalRequests } from './helpers.ts'
+import { brush, loadTrack, pickFile, RUN_GPX, trackPage } from './helpers.ts'
 
 test.use({ viewport: { width: 1280, height: 4400 } })
 
@@ -9,16 +9,9 @@ function toggle(page: Page, name: string) {
   return page.getByRole('region', { name: `${name} chart` }).getByRole('button', { name })
 }
 
-async function load(page: Page) {
-  const unexpected = await stubExternalRequests(page)
-  await page.goto('/')
-  await page.locator('input[type="file"]').setInputFiles(RUN_GPX)
-  await expect(page.getByRole('region', { name: 'Cadence chart' }).locator('canvas')).toHaveCount(1)
-  return unexpected
-}
-
 test('charts are ordered speed, elevation, heart rate, cadence', async ({ page }) => {
-  await load(page)
+  await loadTrack(page)
+  await expect(trackPage(page).cadence.locator('canvas')).toHaveCount(1)
   const names = await page
     .getByRole('region')
     .evaluateAll((regions) => regions.map((r) => r.getAttribute('aria-label')))
@@ -26,9 +19,8 @@ test('charts are ordered speed, elevation, heart rate, cadence', async ({ page }
 })
 
 test('a chart collapses to its heading and comes back with the selection', async ({ page }) => {
-  const unexpected = await load(page)
-  const elevation = page.getByRole('region', { name: 'Elevation chart' })
-  const speed = page.getByRole('region', { name: 'Speed chart' })
+  const { unexpected } = await loadTrack(page)
+  const { elevation, speed, highlight } = trackPage(page)
 
   await toggle(page, 'Elevation').click()
   await expect(toggle(page, 'Elevation')).toHaveAttribute('aria-expanded', 'false')
@@ -36,16 +28,16 @@ test('a chart collapses to its heading and comes back with the selection', async
 
   // Selecting on another chart while it is collapsed.
   await brush(page, speed, 0.3, 0.6)
-  await expect(page.locator('path.track-selection')).toHaveCount(1)
+  await expect(highlight).toHaveCount(1)
 
   await toggle(page, 'Elevation').click()
   await expect(elevation.locator('canvas')).not.toHaveCount(0)
-  await expect(page.locator('path.track-selection')).toHaveCount(1)
+  await expect(highlight).toHaveCount(1)
 
   // Remembered after a reload.
   await toggle(page, 'Cadence').click()
   await page.reload()
-  await page.locator('input[type="file"]').setInputFiles(RUN_GPX)
+  await pickFile(page, RUN_GPX)
   await expect(toggle(page, 'Cadence')).toHaveAttribute('aria-expanded', 'false')
   await expect(toggle(page, 'Elevation')).toHaveAttribute('aria-expanded', 'true')
   expect(unexpected).toEqual([])

@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:repeat": "playwright test --repeat-each=3"
   },
   "dependencies": {
     "echarts": "^6.1.0",

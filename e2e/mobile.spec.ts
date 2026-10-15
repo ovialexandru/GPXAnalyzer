@@ -1,29 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { RUN_GPX, stubExternalRequests, touchBrush, touches } from './helpers.ts'
+import {
+  horizontalOverflow,
+  loadTrack,
+  openPage,
+  touchBrush,
+  touches,
+  trackPage,
+} from './helpers.ts'
 
 test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
-
-function regions(page: Page) {
-  return {
-    map: page.getByRole('region', { name: 'Track map' }),
-    elevation: page.getByRole('region', { name: 'Elevation chart' }),
-    speed: page.getByRole('region', { name: 'Speed chart' }),
-    highlight: page.locator('path.track-selection'),
-    input: page.locator('input[type="file"]'),
-  }
-}
-
-async function horizontalOverflow(page: Page): Promise<number> {
-  return page.locator('html').evaluate((html) => html.scrollWidth - html.clientWidth)
-}
-
-async function load(page: Page) {
-  const unexpected = await stubExternalRequests(page)
-  await page.goto('/')
-  await regions(page).input.setInputFiles(RUN_GPX)
-  await expect(regions(page).speed.locator('canvas')).toHaveCount(1)
-  return unexpected
-}
 
 /** One-finger swipe upwards from the middle of `target`, which should scroll the page down. */
 async function swipeUp(page: Page, target: Locator) {
@@ -58,13 +43,12 @@ async function smallTargets(page: Page): Promise<string[]> {
 }
 
 test('empty and error states: no horizontal scroll', async ({ page }) => {
-  await stubExternalRequests(page)
-  await page.goto('/')
+  await openPage(page)
   await expect(page.getByRole('button', { name: 'Try a sample track' })).toBeVisible()
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
   expect(await smallTargets(page)).toEqual([])
 
-  await regions(page).input.setInputFiles({
+  await trackPage(page).input.setInputFiles({
     name: 'a-very-long-file-name-that-could-overflow-a-narrow-phone-screen.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('nope'),
@@ -77,20 +61,21 @@ test('empty and error states: no horizontal scroll', async ({ page }) => {
 test('loaded: every control is tap-sized, the map hint shows, no horizontal scroll', async ({
   page,
 }) => {
-  const unexpected = await load(page)
+  const { unexpected } = await loadTrack(page)
   expect(await smallTargets(page)).toEqual([])
   await expect(page.getByText('Use two fingers to move or zoom the map.')).toBeVisible()
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
 
-  await touchBrush(page, regions(page).elevation, 0.3, 0.7)
-  await expect(regions(page).highlight).toHaveCount(1)
+  const { elevation, highlight } = trackPage(page)
+  await touchBrush(page, elevation, 0.3, 0.7)
+  await expect(highlight).toHaveCount(1)
   expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0)
   expect(unexpected).toEqual([])
 })
 
 test('a one-finger vertical swipe over the map or a chart scrolls the page', async ({ page }) => {
-  await load(page)
-  const { map, speed, highlight } = regions(page)
+  await loadTrack(page)
+  const { map, speed, highlight } = trackPage(page)
   const pane = page.locator('.leaflet-map-pane')
   const before = await pane.getAttribute('style')
 
@@ -106,8 +91,8 @@ test('a one-finger vertical swipe over the map or a chart scrolls the page', asy
 })
 
 test('a swipe over a chart keeps the selection', async ({ page }) => {
-  await load(page)
-  const { elevation, speed, highlight } = regions(page)
+  await loadTrack(page)
+  const { elevation, speed, highlight } = trackPage(page)
   await touchBrush(page, elevation, 0.3, 0.7)
   await expect(highlight).toHaveCount(1)
   const d = await highlight.getAttribute('d')
@@ -117,8 +102,8 @@ test('a swipe over a chart keeps the selection', async ({ page }) => {
 })
 
 test('a pinch on the map zooms it', async ({ page }) => {
-  await load(page)
-  const { map } = regions(page)
+  await loadTrack(page)
+  const { map } = trackPage(page)
   await map.scrollIntoViewIfNeeded()
   const box = await map.boundingBox()
   if (!box) throw new Error('map has no box')
