@@ -2,6 +2,7 @@ import L from 'leaflet'
 import { getSegmentRanges } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import type { PointRange } from '../view/index.ts'
+import { getColorRuns, type SpeedColoring } from './speedColors.ts'
 
 /** Class on the highlight's SVG paths. */
 export const SELECTION_CLASS = 'track-selection'
@@ -19,12 +20,22 @@ export const DIMMED_OPACITY = 0.35
 /**
  * The selected points [first, last] (inclusive) as one polyline per segment part, drawn on
  * `renderer` (an SVG renderer, above the canvas track). Parts with a single point are left out.
+ * With `coloring`, the parts are drawn in their speed colors instead of orange.
  */
 export function createSelectionLayers(
   track: Track,
   [first, last]: PointRange,
   renderer: L.Renderer = L.svg(),
+  coloring?: SpeedColoring | null,
 ): L.LayerGroup {
+  if (coloring) {
+    const runs = getColorRuns(track, coloring, [first, last])
+    return L.layerGroup(
+      runs.map((run) =>
+        L.polyline(run.latlngs, { ...SELECTION_STYLE, color: run.color, renderer }),
+      ),
+    )
+  }
   const lines: L.Polyline[] = []
   for (const [start, end] of getSegmentRanges(track)) {
     const from = Math.max(start, first)

@@ -119,13 +119,13 @@ Goal: public static site.
 - [ ] Export the trimmed track as GPX
 
 ### Speed-colored track
-- [ ] Polyline colored by speed relative to the track's avg (moving) speed, as a red → green → blue gradient:
+- [x] Polyline colored by speed relative to the track's avg (moving) speed, as a red → green → blue gradient:
   - red: speed below avg − 25%
   - green: speed within avg ± 25%
   - blue: speed above avg + 25%
-- [ ] Thresholds (the ±25% bands) and colors editable in a settings file, with the values above as defaults
-- [ ] Legend showing the color scale and speed thresholds
-- [ ] Toggle between plain and speed-colored polyline
+- [x] Thresholds (the ±25% bands) and colors editable in a settings file, with the values above as defaults
+- [x] Legend showing the color scale and speed thresholds
+- [x] Toggle between plain and speed-colored polyline
 
 ### Desktop view mode
 - [ ] Button that switches to a layout optimized for large screens (e.g. map and charts side by side, filling the viewport without page scroll)
