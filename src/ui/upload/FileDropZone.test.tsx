@@ -55,3 +55,61 @@ describe('FileDropZone', () => {
     expect(screen.getByRole('button', { name: 'Choose file' })).toBeDisabled()
   })
 })
+
+describe('FileDropZone: Compare with…', () => {
+  function setupCompare(disabled = false) {
+    const onFiles = vi.fn()
+    const onCompare = vi.fn()
+    const { container } = render(
+      <FileDropZone onFiles={onFiles} onCompare={onCompare} disabled={disabled} compact />,
+    )
+    const inputs = container.querySelectorAll<HTMLInputElement>('input[type="file"]')
+    return { onFiles, onCompare, inputs, input: inputs[0] }
+  }
+
+  it('is shown only with onCompare; the page keeps one file input, which takes several files', () => {
+    expect(setup().input).toHaveAttribute('multiple')
+    expect(screen.queryByRole('button', { name: 'Compare with…' })).not.toBeInTheDocument()
+    const { inputs } = setupCompare()
+    expect(inputs).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Compare with…' })).toBeInTheDocument()
+  })
+
+  it('opens the same input; the pick goes to onCompare (first file only), the next to onFiles', () => {
+    const { onFiles, onCompare, input } = setupCompare()
+    const click = vi.spyOn(input, 'click')
+    const other = new File(['<gpx/>'], 'b.gpx')
+    fireEvent.click(screen.getByRole('button', { name: 'Compare with…' }))
+    expect(click).toHaveBeenCalledOnce()
+    fireEvent.change(input, { target: { files: [other, file] } })
+    expect(onCompare).toHaveBeenCalledWith(other)
+    expect(onFiles).not.toHaveBeenCalled()
+
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onFiles).toHaveBeenCalledWith([file])
+    expect(onCompare).toHaveBeenCalledOnce()
+  })
+
+  it('a cancelled compare pick leaves the next pick to onFiles', () => {
+    const { onFiles, onCompare, input } = setupCompare()
+    fireEvent.click(screen.getByRole('button', { name: 'Compare with…' }))
+    fireEvent(input, new Event('cancel'))
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onFiles).toHaveBeenCalledWith([file])
+    expect(onCompare).not.toHaveBeenCalled()
+  })
+
+  it('"Choose file" after "Compare with…" starts over', () => {
+    const { onFiles, onCompare, input } = setupCompare()
+    fireEvent.click(screen.getByRole('button', { name: 'Compare with…' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Choose file' }))
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(onFiles).toHaveBeenCalledWith([file])
+    expect(onCompare).not.toHaveBeenCalled()
+  })
+
+  it('disabled with the drop zone', () => {
+    setupCompare(true)
+    expect(screen.getByRole('button', { name: 'Compare with…' })).toBeDisabled()
+  })
+})

@@ -37,3 +37,17 @@ export const SPEED_COLORS: SpeedColorSettings = {
   smoothingSeconds: 15,
   gradientSteps: 16,
 }
+
+/** Colors of the two compared tracks, as `#rrggbb`. */
+export interface CompareColors {
+  /** Track A: lines, chart series, hover marker and stats column. */
+  a: string
+  /** Track B. */
+  b: string
+}
+
+/** Compared tracks: blue A (the plain track color) and orange B, distinct for color-blind users too. */
+export const COMPARE_COLORS: CompareColors = {
+  a: '#1d4ed8',
+  b: '#ea580c',
+}

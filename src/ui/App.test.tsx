@@ -181,19 +181,23 @@ describe('App', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('loads only the first of several dropped files and shows a notice', async () => {
-    renderApp().drop(gpxFile(run, 'first.gpx'), gpxFile(noEleTime, 'second.gpx'))
-    const summary = await findSummary()
-    expect(within(summary).getByText('first.gpx')).toBeInTheDocument()
+  it('loads only the first two of several dropped files and shows a notice', async () => {
+    renderApp().drop(
+      gpxFile(run, 'first.gpx'),
+      gpxFile(noEleTime, 'second.gpx'),
+      gpxFile(run, 'third.gpx'),
+    )
+    const tracks = await screen.findByRole('list', { name: 'Tracks' })
+    expect(within(tracks).getAllByRole('listitem')).toHaveLength(2)
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Only one file at a time is supported; loaded first.gpx.',
+      'Only two files can be compared; loaded first.gpx and second.gpx.',
     )
   })
 
   it('clears the notice on the next single-file load', async () => {
     const app = renderApp()
-    app.drop(gpxFile(run, 'first.gpx'), gpxFile(run, 'second.gpx'))
-    await findSummary()
+    app.drop(gpxFile(run, 'first.gpx'), gpxFile(run, 'second.gpx'), gpxFile(run, 'third.gpx'))
+    await screen.findByRole('list', { name: 'Tracks' })
     app.pick(gpxFile(noEleTime, 'third.gpx'))
     await screen.findByText('third.gpx')
     expect(screen.getByRole('status')).toBeEmptyDOMElement()

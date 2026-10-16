@@ -1,4 +1,4 @@
-import { SPEED_COLORS } from './settings.ts'
+import { COMPARE_COLORS, SPEED_COLORS } from './settings.ts'
 
 describe('SPEED_COLORS', () => {
   it('defaults match the roadmap: avg ± 25%, red / green / blue', () => {
@@ -24,5 +24,17 @@ describe('SPEED_COLORS', () => {
     for (const color of Object.values(SPEED_COLORS.colors)) {
       expect(color).toMatch(/^#[0-9a-f]{6}$/i)
     }
+  })
+})
+
+describe('COMPARE_COLORS', () => {
+  it('defaults: blue A (the plain track color) and orange B', () => {
+    expect(COMPARE_COLORS).toEqual({ a: '#1d4ed8', b: '#ea580c' })
+  })
+
+  it('colors are #rrggbb and differ', () => {
+    expect(COMPARE_COLORS.a).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(COMPARE_COLORS.b).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(COMPARE_COLORS.a.toLowerCase()).not.toBe(COMPARE_COLORS.b.toLowerCase())
   })
 })

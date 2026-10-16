@@ -57,6 +57,53 @@ export function createTrackLayers(track: Track, coloring?: SpeedColoring | null)
   return { group: L.layerGroup(layers), lines }
 }
 
+/** A compared track and the color its line is drawn in (the plain blue by default). */
+export interface ColoredTrack {
+  track: Track
+  color?: string
+}
+
+/**
+ * The compared tracks' lines in their colors, the first track drawn last (on top), then every
+ * start/end marker above all the lines. `lines[i]` are the lines of `tracks[i]`.
+ */
+export function createCompareLayers(tracks: readonly ColoredTrack[]): {
+  group: L.LayerGroup
+  lines: L.Polyline[][]
+} {
+  const lines = tracks.map(({ track, color = LINE_STYLE.color }) =>
+    getSegmentLines(track).map((line) => L.polyline(line, { ...LINE_STYLE, color })),
+  )
+  const layers: L.Layer[] = lines.toReversed().flat()
+  for (const { track } of tracks) {
+    const first = track.points[0]
+    const last = track.points.at(-1)
+    if (!first || !last) continue
+    layers.push(endpointMarker(first, START_COLOR, 'Start'))
+    layers.push(endpointMarker(last, END_COLOR, 'Finish'))
+  }
+  return { group: L.layerGroup(layers), lines }
+}
+
+/** The box around all the given bounds; null when there are none. */
+export function combineBounds(
+  all: readonly (TrackBounds | null | undefined)[],
+): TrackBounds | null {
+  let combined: TrackBounds | null = null
+  for (const b of all) {
+    if (!b) continue
+    combined = combined
+      ? {
+          south: Math.min(combined.south, b.south),
+          west: Math.min(combined.west, b.west),
+          north: Math.max(combined.north, b.north),
+          east: Math.max(combined.east, b.east),
+        }
+      : b
+  }
+  return combined
+}
+
 /** Fit the map to the bounds; does nothing when there are none. */
 export function fitTrack(map: L.Map, bounds: TrackBounds | null): void {
   if (!bounds) return

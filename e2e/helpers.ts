@@ -3,6 +3,8 @@ import path from 'node:path'
 
 const FIXTURES = path.join(import.meta.dirname, '../src/test/fixtures')
 export const RUN_GPX = path.join(FIXTURES, 'run.gpx')
+/** A shorter, slower second run of the RUN_GPX route (no cadence), for comparing tracks. */
+export const RUN_B_GPX = path.join(FIXTURES, 'run-b.gpx')
 export const BIKE_GPX = path.join(FIXTURES, 'bike.gpx')
 export const NO_ELE_TIME_GPX = path.join(FIXTURES, 'no-ele-time.gpx')
 

@@ -38,6 +38,17 @@ export const SLIDER_GRID: ChartOption['grid'] = {
   bottom: GRID_BOTTOM + SLIDER_SPACE,
 }
 
+/** Room above the plot area for the compared tracks' legend, in px. */
+export const LEGEND_SPACE = 24
+
+/** GRID and SLIDER_GRID with room for the legend, while two tracks are compared. */
+export const LEGEND_GRID: ChartOption['grid'] = { ...GRID_BASE, top: GRID_BASE.top + LEGEND_SPACE }
+export const LEGEND_SLIDER_GRID: ChartOption['grid'] = {
+  ...GRID_BASE,
+  top: GRID_BASE.top + LEGEND_SPACE,
+  bottom: GRID_BOTTOM + SLIDER_SPACE,
+}
+
 /** Labels that would overlap a neighbour (e.g. the axis max next to the last tick) are hidden. */
 export const AXIS_LABEL = { color: COLORS.axisLabel, fontSize: FONT_SIZE, hideOverlap: true }
 export const SPLIT_LINE = { lineStyle: { color: COLORS.splitLine } }

@@ -56,3 +56,14 @@
 .button:disabled {
   cursor: not-allowed;
 }
+
+/* "Compare with…": outlined, so "Choose file" stays the main action. */
+.secondary {
+  border: 2px solid #2563eb;
+  background: #ffffff;
+  color: #1d4ed8;
+}
+
+.secondary:hover:not(:disabled) {
+  background: #e0ebff;
+}

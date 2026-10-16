@@ -1,5 +1,6 @@
 import bike from './fixtures/bike.gpx?raw'
 import noEleTime from './fixtures/no-ele-time.gpx?raw'
+import runB from './fixtures/run-b.gpx?raw'
 import run from './fixtures/run.gpx?raw'
 
 const TPX = 'http://www.garmin.com/xmlschemas/TrackPointExtension/v1'
@@ -13,6 +14,7 @@ describe.each([
   { name: 'run.gpx', xml: run, trkpt: 150, trkseg: 1 },
   { name: 'bike.gpx', xml: bike, trkpt: 200, trkseg: 2 },
   { name: 'no-ele-time.gpx', xml: noEleTime, trkpt: 80, trkseg: 1 },
+  { name: 'run-b.gpx', xml: runB, trkpt: 130, trkseg: 1 },
 ])('$name', ({ xml, trkpt, trkseg }) => {
   const doc = parse(xml)
 
@@ -40,4 +42,17 @@ it('run.gpx has HR and cadence extensions on every point', () => {
   const doc = parse(run)
   expect(doc.getElementsByTagNameNS(TPX, 'hr')).toHaveLength(150)
   expect(doc.getElementsByTagNameNS(TPX, 'cad')).toHaveLength(150)
+})
+
+it('run-b.gpx is a slower, shorter second run of the run.gpx route: HR on every point, no cadence', () => {
+  const doc = parse(runB)
+  expect(doc.getElementsByTagName('name')[0].textContent).toBe('Run B fixture')
+  expect(doc.getElementsByTagNameNS(TPX, 'hr')).toHaveLength(130)
+  expect(doc.getElementsByTagNameNS(TPX, 'cad')).toHaveLength(0)
+  const times = [...doc.getElementsByTagName('time')].map((t) => Date.parse(t.textContent ?? ''))
+  const runTimes = [...parse(run).getElementsByTagName('time')].map((t) =>
+    Date.parse(t.textContent ?? ''),
+  )
+  // The first 130 points, 10% slower.
+  expect(times[129] - times[0]).toBe(Math.round((runTimes[129] - runTimes[0]) * 1.1))
 })
