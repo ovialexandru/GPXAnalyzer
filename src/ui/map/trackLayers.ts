@@ -1,6 +1,7 @@
 import L from 'leaflet'
 import { getSegmentLines, type TrackBounds } from '../../metrics/index.ts'
 import type { Track, TrackPoint } from '../../model/index.ts'
+import { getColorRuns, type SpeedColoring } from './speedColors.ts'
 
 export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 export const TILE_ATTRIBUTION =
@@ -36,9 +37,16 @@ export interface TrackLayers {
   lines: L.Polyline[]
 }
 
-/** One polyline per segment, then start/end markers so they are drawn above the line. */
-export function createTrackLayers(track: Track): TrackLayers {
-  const lines = getSegmentLines(track).map((line) => L.polyline(line, LINE_STYLE))
+/**
+ * One polyline per segment (or, with `coloring`, per run of one speed color), then start/end
+ * markers so they are drawn above the line.
+ */
+export function createTrackLayers(track: Track, coloring?: SpeedColoring | null): TrackLayers {
+  const lines = coloring
+    ? getColorRuns(track, coloring).map((run) =>
+        L.polyline(run.latlngs, { ...LINE_STYLE, color: run.color }),
+      )
+    : getSegmentLines(track).map((line) => L.polyline(line, LINE_STYLE))
   const layers: L.Layer[] = [...lines]
   const first = track.points[0]
   const last = track.points.at(-1)

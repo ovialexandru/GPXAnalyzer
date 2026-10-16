@@ -69,3 +69,30 @@
   outline: 2px solid #1d4ed8;
   outline-offset: 2px;
 }
+
+/* Track color switch, kept close to the map below it (the page gap is 1rem). */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: -0.5rem;
+}
+
+.legend {
+  margin-top: -0.5rem;
+  font-size: 0.875rem;
+  color: #5b6475;
+}
+
+.legendBar {
+  height: 0.5rem;
+  border-radius: 4px;
+}
+
+.legendLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+}

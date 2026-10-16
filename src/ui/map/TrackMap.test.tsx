@@ -12,13 +12,24 @@ import {
   type FakeMap,
 } from '../../test/leafletMock.ts'
 import { renderWithViewStore as render } from '../../test/viewStore.tsx'
-import { getTrackBounds } from '../../metrics/index.ts'
+import { getTrackBounds, getTrackMetrics, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
 import { parseGpx } from '../../parser/index.ts'
+import { SPEED_COLORS } from '../../settings.ts'
+import { formatSpeed } from '../format.ts'
 import { UnitsProvider } from '../units/index.ts'
-import { TrackMap } from './index.ts'
+import { gradientPalette } from './speedColors.ts'
+import { TrackMap as TrackMapView } from './index.ts'
 
 vi.mock('leaflet', () => import('../../test/leafletMock.ts'))
+
+const metricsCache = new WeakMap<Track, TrackMetrics>()
+
+/** The map with the track's metrics, computed once per track like the app does. */
+function TrackMap({ track }: { track: Track }) {
+  if (!metricsCache.has(track)) metricsCache.set(track, getTrackMetrics(track))
+  return <TrackMapView track={track} metrics={metricsCache.get(track)!} />
+}
 
 function track(text: string): Track {
   const result = parseGpx(text)
@@ -449,5 +460,150 @@ describe('TrackMap selection', () => {
     const newLines = layerGroup(2).layers.filter((l: { setStyle?: unknown }) => l.setStyle)
     expect(newLines).toHaveLength(2)
     for (const line of newLines) expect(line.options.opacity).toBe(0.35)
+  })
+})
+
+describe('TrackMap track color', () => {
+  afterEach(() => localStorage.clear())
+
+  const palette = gradientPalette(SPEED_COLORS)
+
+  type FakeLine = { setStyle?: unknown; options: { color: string; opacity?: number } }
+
+  /** The track lines (not the markers) of the n-th layer group. */
+  function groupLines(n: number): FakeLine[] {
+    return layerGroup(n).layers.filter((l: FakeLine) => l.setStyle)
+  }
+
+  function lineColors(n: number): string[] {
+    return groupLines(n).map((l) => l.options.color)
+  }
+
+  it('Plain by default: the toggle shows Plain, one blue line, no legend', () => {
+    const { getByRole, queryByRole } = render(<TrackMap track={track(run)} />)
+    expect(getByRole('group', { name: 'Track color' })).toBeInTheDocument()
+    expect(getByRole('radio', { name: 'Plain' })).toBeChecked()
+    expect(getByRole('radio', { name: 'Speed' })).toBeEnabled()
+    expect(lineColors(0)).toEqual(['#1d4ed8'])
+    expect(queryByRole('group', { name: 'Speed colors' })).not.toBeInTheDocument()
+  })
+
+  it('Speed swaps in gradient-colored runs without moving the map, and is remembered', () => {
+    const { getByRole } = render(<TrackMap track={track(run)} />)
+    const map = createdMap()
+    vi.mocked(map.fitBounds).mockClear()
+
+    fireEvent.click(getByRole('radio', { name: 'Speed' }))
+    expect(getByRole('radio', { name: 'Speed' })).toBeChecked()
+    expect(layerGroup(0).remove).toHaveBeenCalledTimes(1)
+    expect(layerGroup(1).addTo).toHaveBeenCalledWith(map)
+    const colors = lineColors(1)
+    expect(colors.length).toBeGreaterThan(10)
+    for (const color of colors) expect(palette).toContain(color)
+    // run.gpx crosses both thresholds.
+    expect(colors).toContain(SPEED_COLORS.colors.slow)
+    expect(colors).toContain(SPEED_COLORS.colors.fast)
+    // Markers are still drawn above the lines.
+    expect(layerGroup(1).layers.at(-1)).toBe(vi.mocked(L.circleMarker).mock.results.at(-1)?.value)
+    expect(map.fitBounds).not.toHaveBeenCalled()
+    expect(localStorage.getItem('gpx-analyzer.trackColor')).toBe('speed')
+
+    fireEvent.click(getByRole('radio', { name: 'Plain' }))
+    expect(layerGroup(1).remove).toHaveBeenCalledTimes(1)
+    expect(lineColors(2)).toEqual(['#1d4ed8'])
+    expect(localStorage.getItem('gpx-analyzer.trackColor')).toBe('plain')
+    expect(map.fitBounds).not.toHaveBeenCalled()
+  })
+
+  it('colored runs stay inside segments (bike.gpx has two)', () => {
+    localStorage.setItem('gpx-analyzer.trackColor', 'speed')
+    const t = track(bike)
+    render(<TrackMap track={t} />)
+    const lines = vi.mocked(L.polyline).mock.results.map((r) => r.value)
+    const points = lines.reduce((sum, l) => sum + (l.latlngs as unknown[]).length, 0)
+    // Each run repeats the last point of the run before it, except at the two segment starts.
+    expect(points).toBe(t.points.length + lines.length - 2)
+  })
+
+  it('the saved choice is restored', () => {
+    localStorage.setItem('gpx-analyzer.trackColor', 'speed')
+    const { getByRole } = render(<TrackMap track={track(run)} />)
+    expect(getByRole('radio', { name: 'Speed' })).toBeChecked()
+    expect(lineColors(0).length).toBeGreaterThan(10)
+    expect(getByRole('group', { name: 'Speed colors' })).toBeInTheDocument()
+  })
+
+  it('no timestamps: Speed is disabled with a hint, Plain is drawn, the choice is kept', () => {
+    localStorage.setItem('gpx-analyzer.trackColor', 'speed')
+    const { getByRole, getByText, queryByRole, rerender } = render(
+      <TrackMap track={track(noEleTime)} />,
+    )
+    expect(getByRole('radio', { name: 'Speed' })).toBeDisabled()
+    expect(getByRole('radio', { name: 'Plain' })).toBeChecked()
+    expect(getByText('Speed').closest('label')).toHaveAttribute(
+      'title',
+      "This track has no timestamps, so it can't be colored by speed.",
+    )
+    expect(lineColors(0)).toEqual(['#1d4ed8'])
+    expect(queryByRole('group', { name: 'Speed colors' })).not.toBeInTheDocument()
+    expect(localStorage.getItem('gpx-analyzer.trackColor')).toBe('speed')
+
+    rerender(<TrackMap track={track(run)} />)
+    expect(getByRole('radio', { name: 'Speed' })).toBeChecked()
+    expect(lineColors(1).length).toBeGreaterThan(10)
+  })
+
+  it('legend: lower threshold, avg and upper threshold, in the current units', () => {
+    localStorage.setItem('gpx-analyzer.trackColor', 'speed')
+    localStorage.setItem('gpx-analyzer.units', 'imperial')
+    const t = track(run)
+    const avg = getTrackMetrics(t).totals.avgSpeed!
+    const { getByRole } = render(
+      <UnitsProvider>
+        <TrackMap track={t} />
+      </UnitsProvider>,
+    )
+    const legend = getByRole('group', { name: 'Speed colors' })
+    expect(legend).toHaveTextContent(
+      `≤ ${formatSpeed(avg * 0.75, 'imperial')}` +
+        `avg ${formatSpeed(avg, 'imperial')}` +
+        `≥ ${formatSpeed(avg * 1.25, 'imperial')}`,
+    )
+    expect(legend).toHaveTextContent(/mph/)
+    const bar = legend.querySelector('[aria-hidden="true"]') as HTMLElement
+    expect(bar.style.background).toContain('linear-gradient')
+  })
+
+  it('Speed mode: the selection is drawn in its speed colors over the dimmed runs', () => {
+    localStorage.setItem('gpx-analyzer.trackColor', 'speed')
+    const { store } = render(<TrackMap track={track(run)} />)
+    store.setSelection([10, 100])
+    flushFrame()
+    const selection = vi
+      .mocked(L.polyline)
+      .mock.results.map((r) => r.value)
+      .filter((l) => l.options.className === 'track-selection')
+    expect(selection.length).toBeGreaterThan(1)
+    for (const line of selection) {
+      expect(palette).toContain(line.options.color)
+      expect(line.options.weight).toBe(5)
+    }
+    for (const line of groupLines(0)) expect(line.options.opacity).toBe(0.35)
+  })
+
+  it('switching mode with a selection redraws it and dims the new lines', () => {
+    const { getByRole, store } = render(<TrackMap track={track(run)} />)
+    store.setSelection([10, 100])
+    flushFrame()
+    // Groups so far: the plain track, the orange overlay.
+    expect(layerGroup(1).layers[0].options.color).toBe('#ea580c')
+
+    fireEvent.click(getByRole('radio', { name: 'Speed' }))
+    // Then: the colored track, the colored overlay.
+    expect(layerGroup(1).remove).toHaveBeenCalled()
+    expect(layerGroup(3).addTo).toHaveBeenCalledWith(createdMap())
+    for (const line of layerGroup(3).layers) expect(palette).toContain(line.options.color)
+    for (const line of groupLines(2)) expect(line.options.opacity).toBe(0.35)
+    expect(store.getState().selection).toEqual([10, 100])
   })
 })

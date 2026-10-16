@@ -6,6 +6,8 @@ A fast, private web app for exploring and analyzing GPX tracks: upload a file, t
 
 **Live:** https://ovialexandru.github.io/GPXAnalyzer/
 
+The map can draw the track in one color or colored by speed: red where it was slower than the average moving speed − 25%, green around the average, blue faster than average + 25%, blending in between, with a legend under the map. The thresholds, colors and smoothing are set in [`src/settings.ts`](src/settings.ts) and take effect on the next build.
+
 ## Prerequisites
 
 - Node.js 22 or newer (npm 10+)
@@ -44,4 +46,5 @@ The production build is served under `/GPXAnalyzer/` (`base` in `vite.config.ts`
 - `src/parser` – GPX XML to `Track` (no UI dependencies)
 - `src/metrics` – derived series and stats (no UI dependencies)
 - `src/ui` – React components
+- `src/settings.ts` – settings edited in the repo (speed-color thresholds and colors)
 - `specs/` – mission, roadmap, tech stack, and per-phase specs

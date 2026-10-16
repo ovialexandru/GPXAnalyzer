@@ -91,6 +91,20 @@ A unit test checks the defaults are valid: the ranges above, and `#rrggbb` color
 | No timestamps | Speed disabled with a hint, Plain drawn, saved choice kept | Same pattern as the Speed chart's empty state |
 | E2E proof | Canvas pixel sampling | User choice; tiles are stubbed transparent, so stroke pixels are readable on Windows and Linux CI alike |
 
+## Findings
+- **E2E track:** the sample (`public/sample.gpx`, same data as `run.gpx`, avg 8.2 km/h) crosses both thresholds with the 15 s speed: 43 points at or below the lower one and 21 at or above the upper one. The e2e uses "Try a sample track", and no new fixture was needed.
+- **Large track** (`GpxFiles/kayak_MaratonPatzaichin2026.gpx`, 16 880 points, 1 s recording):
+  - Defaults give 6 145 color runs (about one per 3 points). The colors hover around avg and cross the 1.6% steps often.
+  - Building the runs takes under 10 ms.
+  - Switching Plain/Speed, including Leaflet's canvas redraw, takes 45–72 ms in Chromium.
+  - Panning only shifts the canvas, which is redrawn after each pan or zoom ends.
+
+  That is fast enough to keep the defaults. Fewer steps or a longer window would cut the runs (8 steps: 3 371; 30 s window: 3 450), so both stay settings.
+- **E2E canvas reads:** reading the map canvas directly makes Chrome log a `willReadFrequently` warning after a few reads, which the console check catches. The spec copies the canvas into a fresh one and reads that instead.
+- **E2E typing:** `tsconfig.node.json` gets the `DOM` lib, because functions passed to `evaluate` run in the page and use canvas/document types.
+- The page now has two "Speed" radios ("Track color" and the chart's "Speed or pace"). They are in differently named groups, and the tests scope to the group.
+- Changing `src/settings.ts` (`below: 0.1`, a purple `fast`) changed the map and the legend (lower label 7.4 km/h = 8.2 × 0.9). This was checked once on the dev server and reverted.
+
 ## Context
 - `specs/mission.md`: private, fast on large tracks (tens of thousands of points), mobile-friendly, linked views.
 - `specs/techstack.md`: Leaflet with OSM tiles; pure, unit-tested calculations; SI units, formatted in the UI only; small modules.
