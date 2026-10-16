@@ -190,3 +190,66 @@ describe('setSelection', () => {
     expect(pendingFrames()).toBe(1)
   })
 })
+
+describe('track ids', () => {
+  it('hover, zoom and selection keep the track their points refer to; A is stored as absent', () => {
+    const store = createViewStore({ a: 100, b: 80 })
+    store.setHover({ index: 3, source: 'map', track: 'b' })
+    store.setZoom([10, 20], 'b')
+    store.setSelection([12, 15], 'b')
+    expect(store.getState()).toEqual({
+      hover: { index: 3, source: 'map', track: 'b' },
+      zoom: [10, 20],
+      zoomTrack: 'b',
+      selection: [12, 15],
+      selectionTrack: 'b',
+    })
+
+    store.setHover({ index: 3, source: 'map', track: 'a' })
+    store.setZoom([10, 20], 'a')
+    store.setSelection([12, 15], 'a')
+    expect(store.getState()).toEqual({
+      hover: { index: 3, source: 'map' },
+      zoom: [10, 20],
+      selection: [12, 15],
+    })
+    expect(store.getState().zoomTrack).toBeUndefined()
+    expect(store.getState().hover).not.toHaveProperty('track')
+  })
+
+  it('the same points on the other track are a change', () => {
+    const store = createViewStore()
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.setHover({ index: 3, source: 'map' })
+    store.setSelection([1, 5])
+    flushFrame()
+    store.setHover({ index: 3, source: 'map', track: 'a' })
+    store.setSelection([1, 5], 'a')
+    expect(pendingFrames()).toBe(0)
+    store.setHover({ index: 3, source: 'map', track: 'b' })
+    store.setSelection([1, 5], 'b')
+    flushFrame()
+    expect(listener).toHaveBeenCalledTimes(2)
+    expect(store.getState().selectionTrack).toBe('b')
+  })
+
+  it('a whole-track zoom is recognised per track; clearing drops the track', () => {
+    const store = createViewStore({ a: 100, b: 80 })
+    store.setZoom([0, 79], 'b')
+    expect(store.getState().zoom).toBeNull()
+    store.setZoom([0, 79], 'a')
+    expect(store.getState().zoom).toEqual([0, 79])
+    store.setZoom([0, 99])
+    expect(store.getState().zoom).toBeNull()
+    store.setSelection([2, 9], 'b')
+    store.setSelection(null, 'b')
+    expect(store.getState().selectionTrack).toBeUndefined()
+  })
+
+  it('one point count applies to A only', () => {
+    const store = createViewStore(50)
+    store.setZoom([0, 49], 'b')
+    expect(store.getState().zoom).toEqual([0, 49])
+  })
+})

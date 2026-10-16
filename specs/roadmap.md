@@ -133,6 +133,7 @@ Goal: public static site.
 - [ ] Toggle back to the default layout; choice remembered between visits
 
 ### Multi-file compare
-- [ ] Load several tracks and overlay on map
-- [ ] Overlay series on charts with a legend
-- [ ] Side-by-side stats
+Limited to two tracks (A vs B), linked by distance or elapsed time from each start.
+- [x] Load several tracks and overlay on map
+- [x] Overlay series on charts with a legend
+- [x] Side-by-side stats

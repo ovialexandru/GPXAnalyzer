@@ -4,11 +4,13 @@ import {
   BrushComponent,
   DataZoomComponent,
   GridComponent,
+  LegendComponent,
   ToolboxComponent,
   TooltipComponent,
   type BrushComponentOption,
   type DataZoomComponentOption,
   type GridComponentOption,
+  type LegendComponentOption,
   type ToolboxComponentOption,
   type TooltipComponentOption,
 } from 'echarts/components'
@@ -21,6 +23,8 @@ echarts.use([
   TooltipComponent,
   DataZoomComponent,
   BrushComponent,
+  // Names the compared tracks' series.
+  LegendComponent,
   // The brush always adds a toolbox to the option; it is kept hidden.
   ToolboxComponent,
   CanvasRenderer,
@@ -42,4 +46,5 @@ export type ChartOption = echarts.ComposeOption<
   | DataZoomComponentOption
   | BrushComponentOption
   | ToolboxComponentOption
+  | LegendComponentOption
 >

@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Units } from '../units/units.ts'
-import { useViewStore, type PointRange } from '../view/index.ts'
+import { useViewStore, type PointRange, type TrackId } from '../view/index.ts'
 import { BRUSH_CURSOR } from './brushOption.ts'
+import { metricsFor, type ChartTracks } from './chartLink.ts'
 import type { ECharts } from './echarts.ts'
 import { rangeToX, xToRange, type LineData, type XAxisMode } from './xAxis.ts'
 
@@ -36,6 +37,9 @@ function brushedRange(line: LineData, e: unknown): PointRange | null {
  * can't scroll. A second finger (pinch), or one finger that starts mostly vertical (scroll), switches
  * the brush off for the gesture, and the selection from before it is put back afterwards. Until the
  * gesture is known, and while it scrolls, ECharts' `preventDefault` calls are disarmed.
+ *
+ * With `tracks` (two compared tracks), `line` and `metrics` are the owner track's: a selection made
+ * here is stored on it, and a selection stored on either track is drawn.
  */
 export function useChartBrush(
   chart: ECharts | null,
@@ -43,6 +47,7 @@ export function useChartBrush(
   metrics: TrackMetrics,
   mode: XAxisMode,
   units: Units = 'metric',
+  tracks?: ChartTracks,
 ) {
   const store = useViewStore()
 
@@ -68,9 +73,10 @@ export function useChartBrush(
         brushOption: on ? BRUSH_CURSOR : { brushType: false },
       })
 
-    const draw = (selection: PointRange | null) => {
+    const draw = (selection: PointRange | null, selectionTrack?: TrackId) => {
       shown = selection
-      const x = selection && rangeToX(metrics, mode, selection, units)
+      const x =
+        selection && rangeToX(metricsFor(tracks, metrics, selectionTrack), mode, selection, units)
       dispatch({
         type: 'brush',
         areas: x ? [{ brushType: 'lineX', xAxisIndex: 0, coordRange: x }] : [],
@@ -78,19 +84,20 @@ export function useChartBrush(
     }
 
     const follow = () => {
-      const { selection } = store.getState()
-      if (selection !== shown) draw(selection)
+      const { selection, selectionTrack } = store.getState()
+      if (selection !== shown) draw(selection, selectionTrack)
     }
 
-    // Selection before the current touch, what the touch became, and where it started.
+    // Selection (and its track) before the current touch, what the touch became, and where it started.
     let beforeTouch: PointRange | null = null
+    let beforeTouchTrack: TrackId | undefined
     let gesture: Gesture = 'brush'
     let start = { x: 0, y: 0 }
     const suspended = () => gesture === 'pinch' || gesture === 'scroll'
 
     const onBrush = (e: unknown) => {
       if (dispatching || suspended()) return
-      store.setSelection(brushedRange(line, e))
+      store.setSelection(brushedRange(line, e), tracks?.owner)
       // The store may normalise or keep the range; either way this chart already shows the band.
       shown = store.getState().selection
     }
@@ -116,6 +123,7 @@ export function useChartBrush(
       // A new gesture (every finger down is new): remember the selection in case it is undone.
       if (e.touches.length === e.changedTouches.length) {
         beforeTouch = store.getState().selection
+        beforeTouchTrack = store.getState().selectionTrack
         gesture = 'undecided'
         start = { x: e.touches[0].clientX, y: e.touches[0].clientY }
       }
@@ -141,8 +149,9 @@ export function useChartBrush(
       const undo = suspended()
       gesture = 'brush'
       if (!undo) return
-      store.setSelection(beforeTouch)
-      draw(store.getState().selection)
+      store.setSelection(beforeTouch, beforeTouchTrack)
+      const { selection, selectionTrack } = store.getState()
+      draw(selection, selectionTrack)
     }
 
     const dom = chart.getDom()
@@ -170,5 +179,5 @@ export function useChartBrush(
       chart.off('brush', onBrush)
       chart.off('brushend', onBrushEnd)
     }
-  }, [chart, store, line, metrics, mode, units])
+  }, [chart, store, line, metrics, mode, units, tracks])
 }

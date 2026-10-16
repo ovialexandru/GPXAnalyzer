@@ -1,28 +1,11 @@
 import { useMemo } from 'react'
-import { getAvailableFields, type AvailableFields, type TrackMetrics } from '../../metrics/index.ts'
-import {
-  formatCadence,
-  formatDistance,
-  formatDuration,
-  formatElevation,
-  formatHeartRate,
-  formatSpeed,
-} from '../format.ts'
+import { getAvailableFields, type TrackMetrics } from '../../metrics/index.ts'
+import { formatDistance } from '../format.ts'
 import { useUnits } from '../units/index.ts'
 import { useDisplayedStats, useViewStore } from '../view/index.ts'
 import type { LoadedTrack } from './loadGpxFile.ts'
+import { fieldBadges, statRows } from './statRows.ts'
 import styles from './TrackSummary.module.css'
-
-const FIELD_LABELS: Record<keyof AvailableFields, string> = {
-  ele: 'Elevation',
-  time: 'Time',
-  hr: 'Heart rate',
-  cad: 'Cadence',
-}
-
-function orNull(value: number | null, format: (v: number) => string): string | null {
-  return value === null ? null : format(value)
-}
 
 interface TrackSummaryProps {
   loaded: LoadedTrack
@@ -38,20 +21,9 @@ export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
   const store = useViewStore()
   const [units] = useUnits()
   const { totals, selection } = useDisplayedStats(track, metrics)
-  const fields = useMemo(() => getAvailableFields(track), [track])
-  const badges = (Object.keys(FIELD_LABELS) as (keyof AvailableFields)[]).filter((k) => fields[k])
+  const badges = useMemo(() => fieldBadges(getAvailableFields(track)), [track])
   // Totals that are null (no time / no elevation) are left out.
-  const stats: [string, string | null][] = [
-    ['Distance', formatDistance(totals.distance, units)],
-    ['Duration', orNull(totals.duration, formatDuration)],
-    ['Elevation gain', orNull(totals.elevationGain, (m) => formatElevation(m, units))],
-    ['Avg speed', orNull(totals.avgSpeed, (v) => formatSpeed(v, units))],
-    ['Max speed', orNull(totals.maxSpeed, (v) => formatSpeed(v, units))],
-    ['Avg HR', orNull(totals.avgHeartRate, formatHeartRate)],
-    ['Max HR', orNull(totals.maxHeartRate, formatHeartRate)],
-    ['Avg cadence', orNull(totals.avgCadence, formatCadence)],
-    ['Max cadence', orNull(totals.maxCadence, formatCadence)],
-  ]
+  const stats = statRows(totals, units)
 
   return (
     <section className={styles.summary} aria-label="Loaded track">
@@ -92,9 +64,9 @@ export function TrackSummary({ loaded, metrics }: TrackSummaryProps) {
       </dl>
       {badges.length > 0 && (
         <ul className={styles.badges} aria-label="Available data">
-          {badges.map((k) => (
-            <li key={k} className={styles.badge}>
-              {FIELD_LABELS[k]}
+          {badges.map((label) => (
+            <li key={label} className={styles.badge}>
+              {label}
             </li>
           ))}
         </ul>

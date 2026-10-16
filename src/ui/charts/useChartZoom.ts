@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import type { TrackMetrics } from '../../metrics/index.ts'
 import type { Units } from '../units/units.ts'
 import { useViewStore, type PointRange } from '../view/index.ts'
+import { metricsFor, type ChartTracks } from './chartLink.ts'
 import type { ECharts } from './echarts.ts'
 import { axisExtent, pointAtX, rangeToX, xToRange, type LineData, type XAxisMode } from './xAxis.ts'
 
@@ -47,6 +48,8 @@ export function windowRange(
  * Links a line chart's dataZoom to the shared zoom: zooming this chart sets the store's point range,
  * and a range set elsewhere (the other chart, Reset) is applied here. Runs again after every new
  * option (new data, x-axis or speed/pace switch) and re-applies the zoom, since `notMerge` resets it.
+ * With `tracks` (two compared tracks), `line` and `metrics` are the owner track's: a zoom made here
+ * is stored on it, and a zoom stored on either track is shown.
  */
 export function useChartZoom(
   chart: ECharts | null,
@@ -54,6 +57,7 @@ export function useChartZoom(
   metrics: TrackMetrics,
   mode: XAxisMode,
   units: Units = 'metric',
+  tracks?: ChartTracks,
 ) {
   const store = useViewStore()
 
@@ -66,10 +70,10 @@ export function useChartZoom(
     let dispatching = false
 
     const follow = () => {
-      const { zoom } = store.getState()
+      const { zoom, zoomTrack } = store.getState()
       if (zoom === shown) return
       shown = zoom
-      const x = zoom && rangeToX(metrics, mode, zoom, units)
+      const x = zoom && rangeToX(metricsFor(tracks, metrics, zoomTrack), mode, zoom, units)
       dispatching = true
       try {
         chart.dispatchAction(
@@ -87,7 +91,7 @@ export function useChartZoom(
       if (dispatching) return
       const event = e as DataZoomEvent
       const [x0, x1] = windowX(event.batch?.[0] ?? event, extent)
-      store.setZoom(windowRange(line, extent, x0, x1))
+      store.setZoom(windowRange(line, extent, x0, x1), tracks?.owner)
       // The store may normalise or keep the range; either way this chart already shows it.
       shown = store.getState().zoom
     }
@@ -100,5 +104,5 @@ export function useChartZoom(
       // The chart may already be disposed when its container went away first.
       if (!chart.isDisposed()) chart.off('datazoom', onDataZoom)
     }
-  }, [chart, store, line, metrics, mode, units])
+  }, [chart, store, line, metrics, mode, units, tracks])
 }

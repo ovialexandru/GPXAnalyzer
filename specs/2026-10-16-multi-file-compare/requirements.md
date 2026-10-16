@@ -117,7 +117,24 @@ Decided with the user:
 | Base branch | Stacked on the speed-colored track branch | User choice; the speed-color interaction can be built and tested |
 
 ## Findings
-_To be filled in during implementation (fixture details, performance numbers, surprises)._
+- **Fixture:** `src/test/fixtures/run-b.gpx` was generated from `run.gpx` by a one-off script (not committed):
+  - the first 130 of its 150 points, each moved 3 m north, two days later;
+  - times between points stretched by 10%, HR + 5 bpm, and cadence removed.
+
+  It covers a shorter, slower B and a field only A has. `run.gpx` is longer on both axes (1.47 km and 10:44, against B's 1.27 km and about 10:17), so A owns chart ranges with this pair. The tests swap the pair to cover B owning.
+- **Store shape:** the track id is an optional field: `hover.track`, `zoomTrack` and `selectionTrack`, where absent means A, and the store also stores A as absent. Zoom and selection stay `PointRange` tuples, so every existing test passed without the `track: 'a'` additions that `validation.md` allowed. The only existing tests edited are the two `App.test.tsx` tests of the old "one file at a time" notice.
+- **Axis choice lifted:** the chosen x-axis now lives in `App` and is passed to `ChartsPanel`. If no value is passed in, `ChartsPanel` keeps its own state, so its tests are unchanged. Both the map and the stats need the axis to line the tracks up.
+- **ECharts' axis tooltip only lists the series nearest the pointer.** With two tracks sampled at different x values, B's value went missing in e2e. The tooltip now looks each track's value up at the axis position itself (`pointAtX`, the same binary search as alignment).
+- **One file input:** "Compare with…" reuses the drop zone's hidden input, which remembers which button opened it. The page keeps a single `input[type=file]` (the e2e helpers locate it that way), and the input now has `multiple`. React doesn't handle the input's `cancel` event, so a native listener resets a cancelled compare pick.
+- **Series order:** A's chart series is drawn above B's (higher `z`), as on the map. Without it, equal values, such as the fixture pair's elevation, hid A under B.
+- **Two large tracks:** `kayak_MaratonPatzaichin2026.gpx` (16 880 points) was loaded as both A and B and measured in Chromium. No main-thread task over 50 ms occurred during any of these interactions:
+  - a 61-step hover sweep over the Speed chart;
+  - a 10-step brush;
+  - a 5-step wheel zoom;
+  - a 20-step map pan;
+  - a 31-step map hover sweep.
+
+  Loading the pair takes about 2.3 s of main-thread work (5 long tasks, the largest 810 ms): parsing two 6.4 MB files, their metrics and the first chart draw. That is the single-file cost twice. The 50 000-point alignment unit test does 10 000 point and range lookups in well under 500 ms.
 
 ## Context
 - `specs/mission.md`: private (files never leave the browser), linked views, fast on large tracks, mobile-friendly, no saved libraries.

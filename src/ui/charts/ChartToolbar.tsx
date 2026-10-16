@@ -8,6 +8,8 @@ interface ChartToolbarProps {
   mode: XAxisMode
   /** The Time option needs timestamps. */
   hasTime: boolean
+  /** Why Time is disabled; "No timestamps in this track" by default. */
+  timeHint?: string
   onModeChange: (mode: XAxisMode) => void
 }
 
@@ -25,7 +27,12 @@ function isTextEntry(target: EventTarget | null): boolean {
  * Controls for both charts: the x-axis toggle, "Reset zoom" (disabled while not zoomed), and
  * "Zoom to selection" / "Clear selection" (disabled without a selection; Esc clears it too).
  */
-export function ChartToolbar({ mode, hasTime, onModeChange }: ChartToolbarProps) {
+export function ChartToolbar({
+  mode,
+  hasTime,
+  timeHint = 'No timestamps in this track',
+  onModeChange,
+}: ChartToolbarProps) {
   const store = useViewStore()
   const zoomed = useViewState((s) => s.zoom !== null)
   const selected = useViewState((s) => s.selection !== null)
@@ -50,7 +57,7 @@ export function ChartToolbar({ mode, hasTime, onModeChange }: ChartToolbarProps)
             value: 'time',
             label: 'Time',
             disabled: !hasTime,
-            hint: 'No timestamps in this track',
+            hint: timeHint,
           },
         ]}
         onChange={onModeChange}
@@ -68,7 +75,10 @@ export function ChartToolbar({ mode, hasTime, onModeChange }: ChartToolbarProps)
           type="button"
           className={styles.button}
           disabled={!selected}
-          onClick={() => store.setZoom(store.getState().selection)}
+          onClick={() => {
+            const { selection, selectionTrack } = store.getState()
+            store.setZoom(selection, selectionTrack)
+          }}
         >
           Zoom to selection
         </button>

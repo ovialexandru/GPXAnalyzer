@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAvailableFields, type TrackMetrics } from '../../metrics/index.ts'
 import type { Track } from '../../model/index.ts'
+import { useComparison } from '../compare/ComparisonContext.tsx'
 import { useUnits } from '../units/index.ts'
 import { ChartCard } from './ChartCard.tsx'
+import { useChartLink } from './chartLink.ts'
 import { SegmentedControl } from '../common/SegmentedControl.tsx'
-import { buildSpeedOption, type SpeedMetric } from './speedOption.ts'
+import { buildSpeedCompareOption, buildSpeedOption, type SpeedMetric } from './speedOption.ts'
 import { useChartBrush } from './useChartBrush.ts'
 import { useChartHover } from './useChartHover.ts'
 import { useChartZoom } from './useChartZoom.ts'
@@ -27,7 +29,10 @@ interface SpeedChartProps {
   onToggleCollapsed?: () => void
 }
 
-/** Speed or pace chart with its own switch, or an empty state when the track has no timestamps. */
+/**
+ * Speed or pace chart with its own switch, or an empty state when the track has no timestamps.
+ * While two tracks are compared, it shows each one that has timestamps.
+ */
 export function SpeedChart({
   track,
   metrics,
@@ -37,16 +42,24 @@ export function SpeedChart({
   onToggleCollapsed,
 }: SpeedChartProps) {
   const [metric, setMetric] = useState<SpeedMetric>('speed')
-  const hasTime = useMemo(() => getAvailableFields(track).time, [track])
+  const comparison = useComparison()
+  // The compared tracks with timestamps; null with one track.
+  const timed = useMemo(
+    () => comparison?.entries.filter((e) => getAvailableFields(e.track).time) ?? null,
+    [comparison],
+  )
+  const ownTime = useMemo(() => getAvailableFields(track).time, [track])
+  const hasTime = timed ? timed.length > 0 : ownTime
   const [units] = useUnits()
   const { containerRef, chart } = useECharts()
-  const built = useMemo(
-    () =>
-      hasTime && !collapsed
-        ? buildSpeedOption(track, metrics, mode, metric, withSlider, units)
-        : null,
-    [hasTime, collapsed, track, metrics, mode, metric, withSlider, units],
-  )
+  const built = useMemo(() => {
+    if (!hasTime || collapsed) return null
+    if (comparison && timed) {
+      const axisMetrics = comparison.axes[comparison.owner].metrics
+      return buildSpeedCompareOption(timed, axisMetrics, mode, metric, withSlider, units)
+    }
+    return buildSpeedOption(track, metrics, mode, metric, withSlider, units)
+  }, [hasTime, collapsed, comparison, timed, track, metrics, mode, metric, withSlider, units])
 
   useEffect(() => {
     if (!chart || !built) return
@@ -54,9 +67,10 @@ export function SpeedChart({
   }, [chart, built])
 
   // Zoom first: a zoom change must reach the chart before the hover pointer is placed on it.
-  useChartZoom(chart, built?.line ?? null, metrics, mode, units)
-  useChartBrush(chart, built?.line ?? null, metrics, mode, units)
-  useChartHover(chart, 'speed', built?.line ?? null, metrics, mode, units)
+  const link = useChartLink(comparison, built, metrics)
+  useChartZoom(chart, link.line, link.metrics, mode, units, link.tracks)
+  useChartBrush(chart, link.line, link.metrics, mode, units, link.tracks)
+  useChartHover(chart, 'speed', link.line, link.metrics, mode, units, link.tracks)
 
   return (
     <ChartCard

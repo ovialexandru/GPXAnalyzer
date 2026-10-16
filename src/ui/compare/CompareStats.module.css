@@ -1,0 +1,149 @@
+.summary {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #d5dbe5;
+  border-radius: 12px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  padding-left: 0.75rem;
+  border: 1px solid #c3cbd8;
+  border-radius: 999px;
+  background: #f7f9fc;
+}
+
+.swatch {
+  flex: none;
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
+
+.letter {
+  font-weight: 700;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tap-sized round button at the end of the chip. */
+.remove {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #5b6475;
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: #e5e9f0;
+  color: #1f2937;
+}
+
+.remove:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: -4px;
+}
+
+.selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.selectionText {
+  margin: 0;
+  min-width: 0;
+  font-weight: 600;
+  color: #c2410c;
+  overflow-wrap: anywhere;
+}
+
+/* A text button, but tap-sized. */
+.wholeTrack {
+  min-height: 44px;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.wholeTrack:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.table th,
+.table td {
+  padding: 0.25rem 1.5rem 0.25rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table tbody th {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #5b6475;
+}
+
+.table tbody td {
+  font-weight: 600;
+}
+
+.table tbody td.badges {
+  font-size: 0.875rem;
+  font-weight: 400;
+  white-space: normal;
+}
+
+.column {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.note {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #5b6475;
+}
